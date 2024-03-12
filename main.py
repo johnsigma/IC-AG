@@ -28,12 +28,12 @@ def ler_arquivo(nomeArquivo, numTarefas, dicionarioTarefas):
     return numTarefas, dicionarioTarefas
 
 
-def selecaoIndividuos(populacao, dicionarioTarefas, numProcessadores, numTarefas):
+def selecaoIndividuos(populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao):
+
     individuosSelecionados = []
     individuosSorteados = []
-
     while True:
-        if len(individuosSelecionados) == int(len(populacao) * PORCENTAGEM_SELECAO):
+        if len(individuosSelecionados) == int(tamanhoPopulacao * PORCENTAGEM_SELECAO):
             break
 
         individuo1 = None
@@ -50,9 +50,6 @@ def selecaoIndividuos(populacao, dicionarioTarefas, numProcessadores, numTarefas
             if individuo2 not in individuosSorteados:
                 individuosSorteados.append(individuo2)
                 break
-
-        # print(individuo1)
-        # print(individuo2)
 
         fitness1 = fitness(individuo1, dicionarioTarefas,
                            numProcessadores, numTarefas)
@@ -128,6 +125,56 @@ def populacaoInicial(numTarefas, numProcessadores, tamanhoPopulacao, dicionarioT
     return populacao
 
 
+def crossover_map(pai1, pai2, numTarefas):
+    ponto_corte = random.randint(0, numTarefas - 1)
+    filho1 = {
+        'mapeamento': [],
+        'sequencia': pai1['sequencia']
+    }
+    filho2 = {
+        'mapeamento': [],
+        'sequencia': pai2['sequencia']
+    }
+
+    filho1['mapeamento'] = pai1['mapeamento'][:ponto_corte] + \
+        pai2['mapeamento'][ponto_corte:]
+
+    filho2['mapeamento'] = pai2['mapeamento'][:ponto_corte] + \
+        pai1['mapeamento'][ponto_corte:]
+
+    return [filho1, filho2]
+
+
+def crossover_seq(pai1, pai2, numTarefas):
+    ponto_corte = random.randint(0, numTarefas - 1)
+    filho = {
+        'mapeamento': pai1['mapeamento'],
+        'sequencia': []
+    }
+
+    tarefasCorte = pai1['sequencia'][:ponto_corte]
+    filho['sequencia'] = tarefasCorte
+
+    for tarefa in pai2['sequencia']:
+        if tarefa not in tarefasCorte:
+            filho['sequencia'].append(tarefa)
+
+    return filho
+
+
+def mutacao(pai, numeroProcessadores):
+    posicao = random.randint(0, len(pai['sequencia']) - 1)
+
+    while True:
+        novoProcessador = random.randint(0, numeroProcessadores - 1)
+
+        if novoProcessador != pai['mapeamento'][posicao]:
+            pai['mapeamento'][posicao] = novoProcessador
+            break
+
+    return pai
+
+
 def fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas):
     RT = [0] * numProcessadores  # RT = Ready Time
     ST = [0] * numTarefas  # ST = Start Time
@@ -159,26 +206,80 @@ if __name__ == '__main__':
     dicionarioTarefas = {}
     numTarefas = 0
 
-    numTarefas, dicionarioTarefas = ler_arquivo(
-        'robot.stg', numTarefas, dicionarioTarefas)
+    arquivo = input('Digite o nome do arquivo: ')
+    numProcessadores = int(input('Digite o número de processadores: '))
+    numeroIteracoes = int(input('Digite o número de iterações: '))
+    tamanhoPopulacao = int(input('Digite o tamanho da população: '))
+    chance_crossover = float(input('Digite a chance de crossover: '))
+    chance_mutacao = float(input('Digite a chance de mutação: '))
 
-    numProcessadores = 4
-    numeroIteracoes = 100
-    tamanhoPopulacao = 50
+    numTarefas, dicionarioTarefas = ler_arquivo(
+        arquivo, numTarefas, dicionarioTarefas)
 
     populacao = populacaoInicial(
         numTarefas, numProcessadores, tamanhoPopulacao, dicionarioTarefas)
 
+    melhorIndividuo = None
+
     for iteracao in range(numeroIteracoes):
-        individuosSelecionados = selecaoIndividuos(
-            populacao, dicionarioTarefas, numProcessadores, numTarefas)
 
-        for individuo in individuosSelecionados:
-            print(fitness(individuo, dicionarioTarefas,
-                  numProcessadores, numTarefas))
+        if iteracao == 0:
+            melhorIndividuo = {
+                'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
+                'iteracao': iteracao + 1,
+                'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
+            }
 
-    # for individuo in populacao:
-    #     # print(individuo)
-    #     print(fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas))
+        fitnessMedia = sum([fitness(
+            individuo, dicionarioTarefas, numProcessadores, numTarefas) for individuo in populacao]) / len(populacao)
 
+        print(f'Média fitness da população: {fitnessMedia:.7f}')
+
+        melhorIndividuoDaPopulacao = {
+            'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
+            'iteracao': iteracao + 1,
+            'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
+        }
+
+        if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
+            melhorIndividuo = melhorIndividuoDaPopulacao
+
+        individuosSelecionados = sorted(populacao, key=lambda individuo: fitness(
+            individuo, dicionarioTarefas, numProcessadores, numTarefas))[:int(tamanhoPopulacao * PORCENTAGEM_SELECAO)]
+
+        # selecaoIndividuos(
+        #     populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao)
+
+        while len(individuosSelecionados) > 1:
+            pai1 = individuosSelecionados.pop(0)
+            pai2 = individuosSelecionados.pop(0)
+
+            rn = random.random()
+
+            if rn < chance_crossover:
+                filhos = crossover_map(pai1, pai2, numTarefas)
+                populacao.extend(filhos)
+            else:
+                filho = crossover_seq(pai1, pai2, numTarefas)
+                populacao.append(filho)
+
+            mutacao1 = random.random()
+            mutacao2 = random.random()
+
+            if mutacao1 < chance_mutacao:
+                indice = populacao.index(pai1)
+                pai1 = mutacao(pai1, numProcessadores)
+                populacao[indice] = pai1
+
+            if mutacao2 < chance_mutacao:
+                indice = populacao.index(pai2)
+                pai2 = mutacao(pai2, numProcessadores)
+                populacao[indice] = pai2
+
+        populacao = random.sample(populacao, tamanhoPopulacao)
+
+    print('Melhor indivíduo:\n')
+    print(f'Iteração: {melhorIndividuo["iteracao"]}')
+    print(f'Fitness: {melhorIndividuo["fitness"]:.7f}')
+    # print(json.dumps(melhorIndividuo, indent=4))
     # print(json.dumps(populacao, indent=4))
