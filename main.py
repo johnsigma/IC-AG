@@ -281,5 +281,6 @@ if __name__ == '__main__':
     print('Melhor indivíduo:\n')
     print(f'Iteração: {melhorIndividuo["iteracao"]}')
     print(f'Fitness: {melhorIndividuo["fitness"]:.7f}')
+    print(f'Individuo: {json.dumps(melhorIndividuo["individuo"], indent=4)}')
     # print(json.dumps(melhorIndividuo, indent=4))
     # print(json.dumps(populacao, indent=4))
