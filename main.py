@@ -201,86 +201,152 @@ def fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas):
     a = 1
     return (a / S_length)
 
+def cria_tempo_execucao(numProcessadores, tempoExecucaoSTG, variacaoExecucao):
+
+    temposExecucao = ''
+
+    if tempoExecucaoSTG == 0:
+            for _ in range(numProcessadores):
+                temposExecucao += '0    '
+    else:
+        for _ in range(numProcessadores):
+            novoTempoExecucao = random.randint(tempoExecucaoSTG, tempoExecucaoSTG + variacaoExecucao)
+            temposExecucao += f'{novoTempoExecucao}    '
+    
+    return temposExecucao
+
+def cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados):
+
+    custosComunicacao = ''
+
+    if tempoExecucaoSTG == 0:
+            for _ in range(numPredecessores):
+                custosComunicacao += '0    '
+    else:
+        for _ in range(numPredecessores):
+            custoComunicacao = random.randint(1, variacaoDados)
+            custosComunicacao += f'{custoComunicacao}    '
+    
+    return custosComunicacao
+
+def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados, nomeArquivo, numTarefas):
+
+    f = open(f'{nomeArquivo[0,-4]}.txt', 'a')
+
+    for chave in dicionarioSTG:
+        tarefa = dicionarioSTG[chave]
+        tempoExecucaoSTG = int(tarefa['tempo_execucao'])
+        numPredecessores = int(tarefa['num_predecessores'])
+
+        if(tempoExecucaoSTG == 0):
+            f.write(f'{numTarefas}    {numProcessadores}')
+            continue
+
+        temposExecucao = cria_tempo_execucao(numProcessadores, tempoExecucaoSTG, variacaoExecucao)
+        custosComunicacao = cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados)
+
+        predecessores = '    '
+
+        for predecessor in predecessores:
+            predecessores += f'{predecessor}    '
+
+        f.write(f'\n{tarefa['tarefa']}    {temposExecucao}{numPredecessores}    {predecessores}{custosComunicacao}')
+
+        f.close()
+
+        
+
+
+
+
+
+        
+
+
+
 
 if __name__ == '__main__':
     dicionarioTarefas = {}
     numTarefas = 0
 
-    arquivo = input('Digite o nome do arquivo: ')
+    # arquivo = input('Digite o nome do arquivo: ')
+    arquivo = 'exemplo.stg'
     numProcessadores = int(input('Digite o número de processadores: '))
-    numeroIteracoes = int(input('Digite o número de iterações: '))
-    tamanhoPopulacao = int(input('Digite o tamanho da população: '))
-    chance_crossover = float(input('Digite a chance de crossover: '))
-    chance_mutacao = float(input('Digite a chance de mutação: '))
+    # numeroIteracoes = int(input('Digite o número de iterações: '))
+    # tamanhoPopulacao = int(input('Digite o tamanho da população: '))
+    # chance_crossover = float(input('Digite a chance de crossover: '))
+    # chance_mutacao = float(input('Digite a chance de mutação: '))
 
     numTarefas, dicionarioTarefas = ler_arquivo(
         arquivo, numTarefas, dicionarioTarefas)
+    
+    print(dicionarioTarefas)
 
-    populacao = populacaoInicial(
-        numTarefas, numProcessadores, tamanhoPopulacao, dicionarioTarefas)
+    # populacao = populacaoInicial(
+    #     numTarefas, numProcessadores, tamanhoPopulacao, dicionarioTarefas)
 
-    melhorIndividuo = None
+    # melhorIndividuo = None
 
-    for iteracao in range(numeroIteracoes):
+    # for iteracao in range(numeroIteracoes):
 
-        if iteracao == 0:
-            melhorIndividuo = {
-                'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
-                'iteracao': iteracao + 1,
-                'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
-            }
+    #     if iteracao == 0:
+    #         melhorIndividuo = {
+    #             'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
+    #             'iteracao': iteracao + 1,
+    #             'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
+    #         }
 
-        fitnessMedia = sum([fitness(
-            individuo, dicionarioTarefas, numProcessadores, numTarefas) for individuo in populacao]) / len(populacao)
+    #     fitnessMedia = sum([fitness(
+    #         individuo, dicionarioTarefas, numProcessadores, numTarefas) for individuo in populacao]) / len(populacao)
 
-        print(f'Média fitness da população: {fitnessMedia:.7f}')
+    #     print(f'Média fitness da população: {fitnessMedia:.7f}')
 
-        melhorIndividuoDaPopulacao = {
-            'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
-            'iteracao': iteracao + 1,
-            'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
-        }
+    #     melhorIndividuoDaPopulacao = {
+    #         'individuo': min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)),
+    #         'iteracao': iteracao + 1,
+    #         'fitness': fitness(min(populacao, key=lambda individuo: fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas)), dicionarioTarefas, numProcessadores, numTarefas)
+    #     }
 
-        if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
-            melhorIndividuo = melhorIndividuoDaPopulacao
+    #     if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
+    #         melhorIndividuo = melhorIndividuoDaPopulacao
 
-        individuosSelecionados = sorted(populacao, key=lambda individuo: fitness(
-            individuo, dicionarioTarefas, numProcessadores, numTarefas))[:int(tamanhoPopulacao * PORCENTAGEM_SELECAO)]
+    #     individuosSelecionados = sorted(populacao, key=lambda individuo: fitness(
+    #         individuo, dicionarioTarefas, numProcessadores, numTarefas))[:int(tamanhoPopulacao * PORCENTAGEM_SELECAO)]
 
-        # selecaoIndividuos(
-        #     populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao)
+    #     # selecaoIndividuos(
+    #     #     populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao)
 
-        while len(individuosSelecionados) > 1:
-            pai1 = individuosSelecionados.pop(0)
-            pai2 = individuosSelecionados.pop(0)
+    #     while len(individuosSelecionados) > 1:
+    #         pai1 = individuosSelecionados.pop(0)
+    #         pai2 = individuosSelecionados.pop(0)
 
-            rn = random.random()
+    #         rn = random.random()
 
-            if rn < chance_crossover:
-                filhos = crossover_map(pai1, pai2, numTarefas)
-                populacao.extend(filhos)
-            else:
-                filho = crossover_seq(pai1, pai2, numTarefas)
-                populacao.append(filho)
+    #         if rn < chance_crossover:
+    #             filhos = crossover_map(pai1, pai2, numTarefas)
+    #             populacao.extend(filhos)
+    #         else:
+    #             filho = crossover_seq(pai1, pai2, numTarefas)
+    #             populacao.append(filho)
 
-            mutacao1 = random.random()
-            mutacao2 = random.random()
+    #         mutacao1 = random.random()
+    #         mutacao2 = random.random()
 
-            if mutacao1 < chance_mutacao:
-                indice = populacao.index(pai1)
-                pai1 = mutacao(pai1, numProcessadores)
-                populacao[indice] = pai1
+    #         if mutacao1 < chance_mutacao:
+    #             indice = populacao.index(pai1)
+    #             pai1 = mutacao(pai1, numProcessadores)
+    #             populacao[indice] = pai1
 
-            if mutacao2 < chance_mutacao:
-                indice = populacao.index(pai2)
-                pai2 = mutacao(pai2, numProcessadores)
-                populacao[indice] = pai2
+    #         if mutacao2 < chance_mutacao:
+    #             indice = populacao.index(pai2)
+    #             pai2 = mutacao(pai2, numProcessadores)
+    #             populacao[indice] = pai2
 
-        populacao = random.sample(populacao, tamanhoPopulacao)
+    #     populacao = random.sample(populacao, tamanhoPopulacao)
 
-    print('Melhor indivíduo:\n')
-    print(f'Iteração: {melhorIndividuo["iteracao"]}')
-    print(f'Fitness: {melhorIndividuo["fitness"]:.7f}')
-    print(f'Individuo: {json.dumps(melhorIndividuo["individuo"], indent=4)}')
+    # print('Melhor indivíduo:\n')
+    # print(f'Iteração: {melhorIndividuo["iteracao"]}')
+    # print(f'Fitness: {melhorIndividuo["fitness"]:.7f}')
+    # print(f'Individuo: {json.dumps(melhorIndividuo["individuo"], indent=4)}')
     # print(json.dumps(melhorIndividuo, indent=4))
     # print(json.dumps(populacao, indent=4))
