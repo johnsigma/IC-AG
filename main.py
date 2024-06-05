@@ -1,3 +1,4 @@
+import copy
 import json
 import random
 
@@ -26,6 +27,34 @@ def ler_arquivo(nomeArquivo, numTarefas, dicionarioTarefas):
                 }
             i += 1
     return numTarefas, dicionarioTarefas
+
+
+def ler_arquivo_ghe(nomeArquivo, numProcessadores):
+
+    dicionarioTarefas = {}
+
+    with open(nomeArquivo, 'r') as arquivo:
+        # Itera sobre cada linha no arquivo
+        i = 0
+        for linha in arquivo:
+
+            if i == 0:
+                i += 1
+                continue
+
+            linha = linha.strip().split(' ')
+            linha_formatada = [valor for valor in linha if valor != '']
+            # print(json.dumps(linha_formatada, indent=4))
+            dicionarioTarefas[linha_formatada[0]] = {
+                'tarefa': linha_formatada[0],
+                'tempos_execucao': copy.deepcopy(linha_formatada[1:numProcessadores+1]),
+                'num_predecessores': copy.deepcopy(linha_formatada[numProcessadores+1]),
+                'predecessores': copy.deepcopy(linha_formatada[numProcessadores+2:numProcessadores+2+int(linha_formatada[numProcessadores+1])]),
+                'custos_comunicacao': copy.deepcopy(linha_formatada[numProcessadores+2+int(linha_formatada[numProcessadores+1]):])
+            }
+            i += 1
+            # print(json.dumps(dicionarioTarefas, indent=4))
+    return dicionarioTarefas
 
 
 def selecaoIndividuos(populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao):
@@ -201,68 +230,69 @@ def fitness(individuo, dicionarioTarefas, numProcessadores, numTarefas):
     a = 1
     return (a / S_length)
 
+
 def cria_tempo_execucao(numProcessadores, tempoExecucaoSTG, variacaoExecucao):
 
     temposExecucao = ''
 
     if tempoExecucaoSTG == 0:
-            for _ in range(numProcessadores):
-                temposExecucao += '0    '
+        for _ in range(numProcessadores):
+            temposExecucao += '0    '
     else:
         for _ in range(numProcessadores):
-            novoTempoExecucao = random.randint(tempoExecucaoSTG, tempoExecucaoSTG + variacaoExecucao)
+            novoTempoExecucao = random.randint(
+                tempoExecucaoSTG, tempoExecucaoSTG + variacaoExecucao)
+
             temposExecucao += f'{novoTempoExecucao}    '
-    
+
     return temposExecucao
+
 
 def cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados):
 
     custosComunicacao = ''
 
     if tempoExecucaoSTG == 0:
-            for _ in range(numPredecessores):
-                custosComunicacao += '0    '
+        for _ in range(numPredecessores):
+            custosComunicacao += '0    '
     else:
         for _ in range(numPredecessores):
             custoComunicacao = random.randint(1, variacaoDados)
             custosComunicacao += f'{custoComunicacao}    '
-    
+
     return custosComunicacao
+
 
 def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados, nomeArquivo, numTarefas):
 
-    f = open(f'{nomeArquivo[0,-4]}.txt', 'a')
+    f = open(f'{nomeArquivo[0:-4]}.txt', 'w')
+
+    f.write(f'{numTarefas-2}    {numProcessadores}')
 
     for chave in dicionarioSTG:
         tarefa = dicionarioSTG[chave]
         tempoExecucaoSTG = int(tarefa['tempo_execucao'])
         numPredecessores = int(tarefa['num_predecessores'])
+        predecessores = tarefa['predecessores']
 
-        if(tempoExecucaoSTG == 0):
-            f.write(f'{numTarefas}    {numProcessadores}')
-            continue
+        # if (tempoExecucaoSTG == 0 and chave == '0'):
+        #     f.write(f'{numTarefas}    {numProcessadores}')
+        #     continue
 
-        temposExecucao = cria_tempo_execucao(numProcessadores, tempoExecucaoSTG, variacaoExecucao)
-        custosComunicacao = cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados)
+        temposExecucao = cria_tempo_execucao(
+            numProcessadores, tempoExecucaoSTG, variacaoExecucao)
+        custosComunicacao = cria_custo_comunicacao(
+            tempoExecucaoSTG, numPredecessores, variacaoDados)
 
-        predecessores = '    '
+        predecessoresStr = ''
 
         for predecessor in predecessores:
-            predecessores += f'{predecessor}    '
+            predecessoresStr += f'{predecessor}    '
 
-        f.write(f'\n{tarefa['tarefa']}    {temposExecucao}{numPredecessores}    {predecessores}{custosComunicacao}')
+        f.write(f'\n{tarefa['tarefa']}    {temposExecucao}{
+                numPredecessores}    {predecessoresStr}{custosComunicacao}')
 
-        f.close()
-
-        
-
-
-
-
-
-        
-
-
+    f.close()
 
 
 if __name__ == '__main__':
@@ -270,7 +300,7 @@ if __name__ == '__main__':
     numTarefas = 0
 
     # arquivo = input('Digite o nome do arquivo: ')
-    arquivo = 'exemplo.stg'
+    arquivo = 'robot.stg'
     numProcessadores = int(input('Digite o número de processadores: '))
     # numeroIteracoes = int(input('Digite o número de iterações: '))
     # tamanhoPopulacao = int(input('Digite o tamanho da população: '))
@@ -279,8 +309,15 @@ if __name__ == '__main__':
 
     numTarefas, dicionarioTarefas = ler_arquivo(
         arquivo, numTarefas, dicionarioTarefas)
-    
-    print(dicionarioTarefas)
+
+    # print(json.dumps(dicionarioTarefas, indent=4))
+
+    escreve_ghe(dicionarioTarefas, numProcessadores,
+                10, 10, arquivo, numTarefas)
+
+    dic = ler_arquivo_ghe(f'{arquivo[0:-4]}.txt', numProcessadores)
+
+    print(json.dumps(dic, indent=4))
 
     # populacao = populacaoInicial(
     #     numTarefas, numProcessadores, tamanhoPopulacao, dicionarioTarefas)
