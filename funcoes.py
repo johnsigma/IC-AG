@@ -286,7 +286,7 @@ def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados
         for predecessor in predecessores:
             predecessoresStr += f'{predecessor}    '
 
-        f.write(f'\n{tarefa['tarefa']}    {temposExecucao}{
-                numPredecessores}    {predecessoresStr}{custosComunicacao}')
+        f.write(
+            f'\n{tarefa["tarefa"]}    {temposExecucao}{numPredecessores}    {predecessoresStr}{custosComunicacao}')
 
     f.close()

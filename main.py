@@ -1,8 +1,9 @@
 import json
 import funcoes
 from MSE import MSE
+from random import seed
 
-# random.seed(675)
+seed(39)
 
 PORCENTAGEM_SELECAO = 0.5
 
@@ -24,8 +25,8 @@ if __name__ == '__main__':
 
     # print(json.dumps(dicionarioTarefas, indent=4))
 
-    funcoes.escreve_ghe(dicionarioTarefas, numProcessadores,
-                        10, 10, arquivo, numTarefas)
+    # funcoes.escreve_ghe(dicionarioTarefas, numProcessadores,
+    #                     10, 10, arquivo, numTarefas)
 
     dic = funcoes.ler_arquivo_ghe(f'{arquivo[0:-4]}.txt', numProcessadores)
 
@@ -35,8 +36,34 @@ if __name__ == '__main__':
 
     populacao = mse.cria_populacao_inicial(10)
 
-    for individuo in populacao:
-        print(mse.makespan(individuo))
+    # print('Pais:\n')
+    # print(json.dumps(populacao[0], indent=4))
+    # print(json.dumps(populacao[1], indent=4))
+
+    # filhos_alocacao = mse.spx_alocacao(populacao[0], populacao[1])
+
+    # print('Filhos alocação:\n')
+    # print(json.dumps(filhos_alocacao[0], indent=4))
+    # print(json.dumps(filhos_alocacao[1], indent=4))
+
+    # filhos_escalonamento = mse.spx_escalonamento(populacao[0], populacao[1])
+
+    # print('Filhos escalonamento:\n')
+    # print(json.dumps(filhos_escalonamento[0], indent=4))
+    # print(json.dumps(filhos_escalonamento[1], indent=4))
+
+    print(populacao[0])
+
+    # print('Mutação escalonamento:\n')
+    # mse.stm(populacao[0])
+    # print(json.dumps(populacao[0], indent=4))
+
+    print('Mutação alocacao:\n')
+    mse.pm(populacao[0])
+    print(json.dumps(populacao[0], indent=4))
+
+    # for individuo in populacao:
+    #     print(mse.makespan(individuo))
 
     # print(json.dumps(populacao, indent=4))
 
