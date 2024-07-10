@@ -1,4 +1,4 @@
-from random import choice, randint
+from random import choice, randint, random
 
 
 class MSE:
@@ -185,3 +185,40 @@ class MSE:
                 print('Novo processador:', novoProcessador)
                 individuo['alocacao'][posicao] = novoProcessador
                 return
+
+    def ajuste_fitness(self, fitness):
+        return 1 / fitness
+
+    def soma_fitness(self, fitness):
+        return sum(fitness)
+
+    def constroe_roleta(self, populacao, somaFitness):
+        roleta = []
+
+        limiteSuperior = 0.0
+
+        for individuo in populacao:
+            fitness = self.ajuste_fitness(self.makespan(individuo))
+            probabilidade = fitness / somaFitness
+            limiteInferior = limiteSuperior
+            limiteSuperior = limiteInferior + probabilidade
+            roleta.append((limiteInferior, limiteSuperior))
+
+        return roleta
+
+    def selecao_roleta(self, populacao):
+
+        fitness = [self.ajuste_fitness(self.makespan(individuo))
+                   for individuo in populacao]
+
+        somaFitness = self.soma_fitness(fitness)
+
+        roleta = self.constroe_roleta(populacao, somaFitness)
+
+        numeroSorteado = random()
+
+        for i, (limiteInferior, limiteSuperior) in enumerate(roleta):
+            if limiteInferior <= numeroSorteado < limiteSuperior:
+                return i
+
+        raise ValueError("Não foi possível selecionar um indivíduo da roleta")

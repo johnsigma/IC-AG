@@ -30,11 +30,16 @@ if __name__ == '__main__':
 
     dic = funcoes.ler_arquivo_ghe(f'{arquivo[0:-4]}.txt', numProcessadores)
 
-    print(json.dumps(dic, indent=4))
+    # print(json.dumps(dic, indent=4))
 
     mse = MSE(dic, numTarefas, numProcessadores)
 
     populacao = mse.cria_populacao_inicial(10)
+    print(json.dumps(populacao, indent=4))
+
+    individuoSelecionado = mse.selecao_roleta(populacao)
+    print('Individuo selecionado: \n', individuoSelecionado)
+    print(json.dumps(populacao[individuoSelecionado], indent=4))
 
     # print('Pais:\n')
     # print(json.dumps(populacao[0], indent=4))
@@ -52,15 +57,15 @@ if __name__ == '__main__':
     # print(json.dumps(filhos_escalonamento[0], indent=4))
     # print(json.dumps(filhos_escalonamento[1], indent=4))
 
-    print(populacao[0])
+    # print(populacao[0])
 
     # print('Mutação escalonamento:\n')
     # mse.stm(populacao[0])
     # print(json.dumps(populacao[0], indent=4))
 
-    print('Mutação alocacao:\n')
-    mse.pm(populacao[0])
-    print(json.dumps(populacao[0], indent=4))
+    # print('Mutação alocacao:\n')
+    # mse.pm(populacao[0])
+    # print(json.dumps(populacao[0], indent=4))
 
     # for individuo in populacao:
     #     print(mse.makespan(individuo))
