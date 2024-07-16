@@ -1,4 +1,5 @@
 from random import choice, randint, random
+import json
 
 
 class MSE:
@@ -74,56 +75,40 @@ class MSE:
 
     def spx_alocacao(self, pai1, pai2):
 
-        filho1 = {
-            'alocacao': [],
-            'escalonamento': pai1['escalonamento']
-        }
+        filho1 = []
 
-        filho2 = {
-            'alocacao': [],
-            'escalonamento': pai2['escalonamento']
-        }
+        filho2 = []
 
         pontoCorte = randint(0, self.numeroTarefas - 1)
 
-        print(f'Ponto de corte: {pontoCorte}')
+        filho1 = pai1[:pontoCorte] + \
+            pai2[pontoCorte:]
 
-        filho1['alocacao'] = pai1['alocacao'][:pontoCorte] + \
-            pai2['alocacao'][pontoCorte:]
-
-        filho2['alocacao'] = pai2['alocacao'][:pontoCorte] + \
-            pai1['alocacao'][pontoCorte:]
+        filho2 = pai2[:pontoCorte] + \
+            pai1[pontoCorte:]
 
         return [filho1, filho2]
 
     def spx_escalonamento(self, pai1, pai2):
-        filho1 = {
-            'alocacao': pai1['alocacao'],
-            'escalonamento': []
-        }
+        filho1 = []
 
-        filho2 = {
-            'alocacao': pai2['alocacao'],
-            'escalonamento': []
-        }
+        filho2 = []
 
         pontoCorte = randint(0, self.numeroTarefas - 1)
 
-        print(f'Ponto de corte: {pontoCorte}')
+        tarefasFilho1 = pai1[:pontoCorte]
+        filho1 = tarefasFilho1
 
-        tarefasFilho1 = pai1['escalonamento'][:pontoCorte]
-        filho1['escalonamento'] = tarefasFilho1
-
-        for tarefa in pai2['escalonamento']:
+        for tarefa in pai2:
             if tarefa not in tarefasFilho1:
-                filho1['escalonamento'].append(tarefa)
+                filho1.append(tarefa)
 
-        tarefasFilho2 = pai2['escalonamento'][:pontoCorte]
-        filho2['escalonamento'] = tarefasFilho2
+        tarefasFilho2 = pai2[:pontoCorte]
+        filho2 = tarefasFilho2
 
-        for tarefa in pai1['escalonamento']:
+        for tarefa in pai1:
             if tarefa not in tarefasFilho2:
-                filho2['escalonamento'].append(tarefa)
+                filho2.append(tarefa)
 
         return [filho1, filho2]
 
@@ -135,56 +120,66 @@ class MSE:
                 print('Individuo inválido')
                 return False
 
+        return True
+
     def stm(self, individuo):
-        tarefa1 = choice(individuo['escalonamento'])
-        posicaoTarefa1 = individuo['escalonamento'].index(tarefa1)
-        predecessoresTarefa1 = self.dict[tarefa1]['predecessores']
-        limiteInferior = 0
-
-        for tarefa in individuo['escalonamento']:
-            if len(predecessoresTarefa1) == 0:
-                break
-            if tarefa in predecessoresTarefa1:
-                predecessoresTarefa1.remove(tarefa)
-
-            limiteInferior += 1
-
-        print('Limite inferior:', limiteInferior)
         while True:
 
-            novaPosicaoTarefa1 = randint(
-                limiteInferior, len(individuo['escalonamento']) - 1)
+            tarefa1 = choice(individuo)
+            posicaoTarefa1 = individuo.index(tarefa1)
 
-            tarefa2 = individuo['escalonamento'][novaPosicaoTarefa1]
+            while posicaoTarefa1 == 0 or posicaoTarefa1 == len(individuo) - 1:
+                tarefa1 = choice(individuo)
+                posicaoTarefa1 = individuo.index(tarefa1)
+
+            predecessoresTarefa1 = self.dict[tarefa1]['predecessores']
+            limiteInferior = 0
+
+            for tarefa in individuo:
+                if len(predecessoresTarefa1) == 0:
+                    break
+                if tarefa in predecessoresTarefa1:
+                    predecessoresTarefa1.remove(tarefa)
+
+                limiteInferior += 1
+
+            novaPosicaoTarefa1 = randint(
+                limiteInferior, len(individuo) - 1)
+
+            while novaPosicaoTarefa1 == posicaoTarefa1 or novaPosicaoTarefa1 == 0:
+                novaPosicaoTarefa1 = randint(
+                    limiteInferior, len(individuo) - 1)
+
+            tarefa2 = individuo[novaPosicaoTarefa1]
             predecessoresTarefa2 = self.dict[tarefa2]['predecessores']
 
             for i in range(0, posicaoTarefa1):
 
-                tarefa = individuo['escalonamento'][i]
+                tarefa = individuo[i]
 
                 if tarefa in predecessoresTarefa2:
                     predecessoresTarefa2.remove(tarefa)
 
                 if len(predecessoresTarefa2) == 0:
-                    individuo['escalonamento'][posicaoTarefa1] = tarefa2
-                    individuo['escalonamento'][novaPosicaoTarefa1] = tarefa1
+                    novoIndividuo = individuo.copy()
+                    novoIndividuo[posicaoTarefa1] = tarefa2
+                    novoIndividuo[novaPosicaoTarefa1] = tarefa1
                     # print('Tarefa 1:', tarefa1)
                     # print('Tarefa 2:', tarefa2)
                     # print('Posição tarefa 1:', posicaoTarefa1)
                     # print('Nova posição tarefa 1:', novaPosicaoTarefa1)
-                    return
+                    return novoIndividuo
 
     def pm(self, individuo):
-        posicao = randint(0, len(individuo['alocacao']) - 1)
+        posicao = randint(0, len(individuo) - 1)
 
         while True:
             novoProcessador = randint(0, self.numeroProcessadores - 1)
 
-            if novoProcessador != individuo['alocacao'][posicao]:
-                print('Posição:', posicao)
-                print('Novo processador:', novoProcessador)
-                individuo['alocacao'][posicao] = novoProcessador
-                return
+            if novoProcessador != individuo[posicao]:
+                novoIndividuo = individuo.copy()
+                novoIndividuo[posicao] = novoProcessador
+                return novoIndividuo
 
     def ajuste_fitness(self, fitness):
         return 1 / fitness
@@ -221,4 +216,123 @@ class MSE:
             if limiteInferior <= numeroSorteado < limiteSuperior:
                 return i
 
+        print('erro roleta')
+
         raise ValueError("Não foi possível selecionar um indivíduo da roleta")
+
+    def elitismo(self, populacao, taxaElitismo):
+        populacaoOrdenada = sorted(
+            populacao, key=lambda individuo: self.makespan(individuo))
+
+        numeroElitismo = int(len(populacao) * taxaElitismo)
+
+        return populacaoOrdenada[:numeroElitismo]
+
+    def inicio(self, tamanhoPopulacao, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo):
+        populacao = self.cria_populacao_inicial(tamanhoPopulacao)
+
+        melhorIndividuo = None
+
+        medias = []
+
+        for iteracao in range(numeroIteracoes):
+
+            if iteracao == 0:
+                melhorIndividuo = {
+                    'individuo': min(populacao, key=lambda individuo: self.makespan(individuo)),
+                    'iteracao': iteracao + 1,
+                    'fitness': self.makespan(min(populacao, key=lambda individuo: self.makespan(individuo)))
+                }
+
+            fitnessMedia = sum([self.makespan(individuo)
+                               for individuo in populacao]) / len(populacao)
+            medias.append(fitnessMedia)
+            print(f'Média fitness da população: {fitnessMedia:.7f}')
+
+            melhorIndividuoDaPopulacao = {
+                'individuo': min(populacao, key=lambda individuo: self.makespan(individuo)),
+                'iteracao': iteracao + 1,
+                'fitness': self.makespan(min(populacao, key=lambda individuo: self.makespan(individuo)))
+            }
+
+            if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
+                melhorIndividuo = melhorIndividuoDaPopulacao
+
+            elite = self.elitismo(populacao, taxaElitismo)
+
+            novaPopulacao = []
+
+            if iteracao == numeroIteracoes - 1:
+                pass
+
+            while len(novaPopulacao) < tamanhoPopulacao - len(elite):
+
+                if iteracao == numeroIteracoes - 1:
+                    pass
+
+                pai1 = populacao[self.selecao_roleta(populacao)]
+
+                while pai1 in elite:
+                    pai1 = populacao[self.selecao_roleta(populacao)]
+
+                pai2 = populacao[self.selecao_roleta(populacao)]
+
+                while pai2 in elite:
+                    pai2 = populacao[self.selecao_roleta(populacao)]
+
+                while pai1 == pai2:
+                    pai2 = populacao[self.selecao_roleta(populacao)]
+
+                filhosAlocacao = []
+                filhosEscalonamento = []
+
+                if random() < chanceCrossoverAlocacao:
+                    filhosAlocacao = self.spx_alocacao(
+                        pai1['alocacao'], pai2['alocacao'])
+                else:
+                    filhosAlocacao = [pai1['alocacao'], pai2['alocacao']]
+
+                if random() < chanceCrossoverEscalonamento:
+                    filhosEscalonamento = self.spx_escalonamento(
+                        pai1['escalonamento'], pai2['escalonamento'])
+                else:
+                    filhosEscalonamento = [
+                        pai1['escalonamento'], pai2['escalonamento']]
+
+                if random() < chanceMutacaoAlocacao:
+                    filhosAlocacao[0] = self.pm(filhosAlocacao[0])
+                if random() < chanceMutacaoAlocacao:
+                    filhosAlocacao[1] = self.pm(filhosAlocacao[1])
+
+                if random() < chanceMutacaoEscalonamento:
+                    filhosEscalonamento[0] = self.stm(filhosEscalonamento[0])
+                if random() < chanceMutacaoEscalonamento:
+                    filhosEscalonamento[1] = self.stm(filhosEscalonamento[1])
+
+                filho1 = {
+                    'alocacao': filhosAlocacao[0],
+                    'escalonamento': filhosEscalonamento[0]
+                }
+
+                filho2 = {
+                    'alocacao': filhosAlocacao[1],
+                    'escalonamento': filhosEscalonamento[1]
+                }
+
+                if self.individuo_valido(filho1):
+                    novaPopulacao.append(filho1)
+                if self.individuo_valido(filho2) and len(novaPopulacao) < tamanhoPopulacao - len(elite):
+                    novaPopulacao.append(filho2)
+
+            # print(f'Iteração {iteracao + 1} concluída')
+
+            for individuo in elite:
+                novaPopulacao.append(individuo)
+
+            populacao = novaPopulacao.copy()
+
+        print('Melhor individuo:')
+        print(f'Iteração: {melhorIndividuo["iteracao"]}')
+        print(f'Fitness: {melhorIndividuo["fitness"]}')
+
+        return medias
