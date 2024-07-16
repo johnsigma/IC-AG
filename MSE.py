@@ -193,7 +193,7 @@ class MSE:
         limiteSuperior = 0.0
 
         for individuo in populacao:
-            fitness = self.ajuste_fitness(self.makespan(individuo))
+            fitness = self.ajuste_fitness(self.fitness(individuo))
             probabilidade = fitness / somaFitness
             limiteInferior = limiteSuperior
             limiteSuperior = limiteInferior + probabilidade
@@ -203,7 +203,7 @@ class MSE:
 
     def selecao_roleta(self, populacao):
 
-        fitness = [self.ajuste_fitness(self.makespan(individuo))
+        fitness = [self.ajuste_fitness(self.fitness(individuo))
                    for individuo in populacao]
 
         somaFitness = self.soma_fitness(fitness)
@@ -222,7 +222,7 @@ class MSE:
 
     def elitismo(self, populacao, taxaElitismo):
         populacaoOrdenada = sorted(
-            populacao, key=lambda individuo: self.makespan(individuo))
+            populacao, key=lambda individuo: self.fitness(individuo))
 
         numeroElitismo = int(len(populacao) * taxaElitismo)
 
@@ -239,20 +239,20 @@ class MSE:
 
             if iteracao == 0:
                 melhorIndividuo = {
-                    'individuo': min(populacao, key=lambda individuo: self.makespan(individuo)),
+                    'individuo': min(populacao, key=lambda individuo: self.fitness(individuo)),
                     'iteracao': iteracao + 1,
-                    'fitness': self.makespan(min(populacao, key=lambda individuo: self.makespan(individuo)))
+                    'fitness': self.fitness(min(populacao, key=lambda individuo: self.fitness(individuo)))
                 }
 
-            fitnessMedia = sum([self.makespan(individuo)
+            fitnessMedia = sum([self.fitness(individuo)
                                for individuo in populacao]) / len(populacao)
             medias.append(fitnessMedia)
             print(f'Média fitness da população: {fitnessMedia:.7f}')
 
             melhorIndividuoDaPopulacao = {
-                'individuo': min(populacao, key=lambda individuo: self.makespan(individuo)),
+                'individuo': min(populacao, key=lambda individuo: self.fitness(individuo)),
                 'iteracao': iteracao + 1,
-                'fitness': self.makespan(min(populacao, key=lambda individuo: self.makespan(individuo)))
+                'fitness': self.fitness(min(populacao, key=lambda individuo: self.fitness(individuo)))
             }
 
             if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
@@ -334,5 +334,27 @@ class MSE:
         print('Melhor individuo:')
         print(f'Iteração: {melhorIndividuo["iteracao"]}')
         print(f'Fitness: {melhorIndividuo["fitness"]}')
+        print(json.dumps(melhorIndividuo, indent=4))
 
         return medias
+
+    def load_balance(self, individuo):
+        tempoProcessadores = [0] * self.numeroProcessadores
+
+        for indice, tarefa in enumerate(individuo['escalonamento']):
+            processador = individuo['alocacao'][indice]
+            tempoExecucao = int(
+                self.dict[tarefa]['tempos_execucao'][processador])
+
+            tempoProcessadores[processador] += tempoExecucao
+
+        cargaMaxima = max(tempoProcessadores)
+        cargaMinima = min(tempoProcessadores)
+
+        return cargaMaxima - cargaMinima
+
+    def fitness(self, individuo, alpha=0.5):
+        makespan = self.makespan(individuo)
+        loadBalance = self.load_balance(individuo)
+
+        return alpha * makespan + (1 - alpha) * loadBalance

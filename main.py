@@ -75,9 +75,9 @@ if __name__ == '__main__':
     # numProcessadores = int(input('Digite o número de processadores: '))
     numProcessadores = 4
     # numeroIteracoes = int(input('Digite o número de iterações: '))
-    numeroIteracoes = 200
+    numeroIteracoes = 100
     # tamanhoPopulacao = int(input('Digite o tamanho da população: '))
-    tamanhoPopulacao = 25
+    tamanhoPopulacao = 30
     # chance_crossover = float(input('Digite a chance de crossover: '))
     chanceCrossoverAlocacao = 0.4
     chanceCrossoverEscalonamento = 0.4
