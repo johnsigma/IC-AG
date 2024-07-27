@@ -26,6 +26,21 @@ def ler_arquivo(nomeArquivo, numTarefas, dicionarioTarefas):
     return numTarefas, dicionarioTarefas
 
 
+def ler_numero_tarefas(nomeArquivo):
+    with open(nomeArquivo, 'r') as arquivo:
+        # Itera sobre cada linha no arquivo
+        i = 0
+        for linha in arquivo:
+            if i == 0:
+                substrings = linha.split()
+                listaAux = [int(substring) for substring in substrings]
+                numTarefas = listaAux[0]
+                return numTarefas
+
+        print('Erro ao ler o número de tarefas')
+        return -1
+
+
 def ler_arquivo_ghe(nomeArquivo, numProcessadores):
 
     dicionarioTarefas = {}
@@ -42,16 +57,53 @@ def ler_arquivo_ghe(nomeArquivo, numProcessadores):
             linha = linha.strip().split(' ')
             linha_formatada = [valor for valor in linha if valor != '']
             # print(json.dumps(linha_formatada, indent=4))
+
+            predecessores = []
+            for predecessor in linha_formatada[numProcessadores+2::2]:
+                predecessores.append(predecessor)
+
+            custosComunicacao = []
+            for custoComunicacao in linha_formatada[numProcessadores+3::2]:
+                custosComunicacao.append(custoComunicacao)
+
             dicionarioTarefas[linha_formatada[0]] = {
                 'tarefa': linha_formatada[0],
                 'tempos_execucao': copy.deepcopy(linha_formatada[1:numProcessadores+1]),
                 'num_predecessores': copy.deepcopy(linha_formatada[numProcessadores+1]),
-                'predecessores': copy.deepcopy(linha_formatada[numProcessadores+2:numProcessadores+2+int(linha_formatada[numProcessadores+1])]),
-                'custos_comunicacao': copy.deepcopy(linha_formatada[numProcessadores+2+int(linha_formatada[numProcessadores+1]):])
+                'predecessores': predecessores,
+                'custos_comunicacao': custosComunicacao
             }
             i += 1
             # print(json.dumps(dicionarioTarefas, indent=4))
     return dicionarioTarefas
+
+
+# def ler_arquivo_ghe(nomeArquivo, numProcessadores):
+
+#     dicionarioTarefas = {}
+
+#     with open(nomeArquivo, 'r') as arquivo:
+#         # Itera sobre cada linha no arquivo
+#         i = 0
+#         for linha in arquivo:
+
+#             if i == 0:
+#                 i += 1
+#                 continue
+
+#             linha = linha.strip().split(' ')
+#             linha_formatada = [valor for valor in linha if valor != '']
+#             # print(json.dumps(linha_formatada, indent=4))
+#             dicionarioTarefas[linha_formatada[0]] = {
+#                 'tarefa': linha_formatada[0],
+#                 'tempos_execucao': copy.deepcopy(linha_formatada[1:numProcessadores+1]),
+#                 'num_predecessores': copy.deepcopy(linha_formatada[numProcessadores+1]),
+#                 'predecessores': copy.deepcopy(linha_formatada[numProcessadores+2:numProcessadores+2+int(linha_formatada[numProcessadores+1])]),
+#                 'custos_comunicacao': copy.deepcopy(linha_formatada[numProcessadores+2+int(linha_formatada[numProcessadores+1]):])
+#             }
+#             i += 1
+#             # print(json.dumps(dicionarioTarefas, indent=4))
+#     return dicionarioTarefas
 
 
 def selecaoIndividuos(populacao, dicionarioTarefas, numProcessadores, numTarefas, tamanhoPopulacao):

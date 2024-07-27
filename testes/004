@@ -1,0 +1,140 @@
+Experimento 4-20-30 (usando alpha=0.3):
+Tarefas = 50
+numeroIteracoes = 500
+tamanhoPopulacao = 20
+chanceCrossoverAlocacao = 0.4
+chanceCrossoverEscalonamento = 0.4
+chanceMutacaoAlocacao = 0.2
+chanceMutacaoEscalonamento = 0.2
+taxaElitismo = 0.35
+
+
+----------------------------------------
+
+grafos_breno/50/rand0000-4-20-30.stg
+Melhor individuo:
+Iteração: 251
+Fitness: 56.6
+Makespan: 177
+Load balance: 5
+Medias:
+Fitness: 90.28438000000011
+Makespan: 207.76580000000016
+Load balance: 39.935199999999966
+
+----------------------------------------
+
+grafos_breno/50/rand0005-4-20-30.stg
+Melhor individuo:
+Iteração: 298
+Fitness: 82.39999999999999
+Makespan: 263
+Load balance: 5
+Medias:
+Fitness: 134.096
+Makespan: 316.84430000000003
+Load balance: 55.77530000000003
+
+----------------------------------------
+
+grafos_breno/50/rand0010-4-20-30.stg
+Melhor individuo:
+Iteração: 125
+Fitness: 50.5
+Makespan: 152
+Load balance: 7
+Medias:
+Fitness: 84.05156000000014
+Makespan: 187.56280000000007
+Load balance: 39.68959999999999
+
+----------------------------------------
+
+grafos_breno/50/rand0015-4-20-30.stg
+Melhor individuo:
+Iteração: 294
+Fitness: 78.2
+Makespan: 249
+Load balance: 5
+Medias:
+Fitness: 124.40727000000001
+Makespan: 281.7385
+Load balance: 56.97959999999997
+
+----------------------------------------
+
+grafos_breno/50/rand0020-4-20-30.stg
+Melhor individuo:
+Iteração: 428
+Fitness: 56.599999999999994
+Makespan: 184
+Load balance: 2
+Medias:
+Fitness: 93.10043999999998
+Makespan: 212.90950000000007
+Load balance: 41.75369999999994
+
+----------------------------------------
+
+grafos_breno/50/rand0025-4-20-30.stg
+Melhor individuo:
+Iteração: 482
+Fitness: 77.8
+Makespan: 250
+Load balance: 4
+Medias:
+Fitness: 126.24284999999998
+Makespan: 303.5679000000002
+Load balance: 50.24640000000001
+
+----------------------------------------
+
+grafos_breno/50/rand0030-4-20-30.stg
+Melhor individuo:
+Iteração: 447
+Fitness: 59.5
+Makespan: 182
+Load balance: 7
+Medias:
+Fitness: 97.65062999999994
+Makespan: 225.0835999999997
+Load balance: 43.03649999999995
+
+----------------------------------------
+
+grafos_breno/50/rand0035-4-20-30.stg
+Melhor individuo:
+Iteração: 88
+Fitness: 73.89999999999999
+Makespan: 237
+Load balance: 4
+Medias:
+Fitness: 118.88041999999996
+Makespan: 277.3060999999998
+Load balance: 50.983700000000006
+
+----------------------------------------
+
+grafos_breno/50/rand0040-4-20-30.stg
+Melhor individuo:
+Iteração: 131
+Fitness: 62.199999999999996
+Makespan: 191
+Load balance: 7
+Medias:
+Fitness: 104.26582
+Makespan: 231.21250000000003
+Load balance: 49.86009999999999
+
+----------------------------------------
+
+grafos_breno/50/rand0045-4-20-30.stg
+Melhor individuo:
+Iteração: 54
+Fitness: 69.5
+Makespan: 227
+Load balance: 2
+Medias:
+Fitness: 124.08219000000015
+Makespan: 283.8644000000003
+Load balance: 55.60409999999994

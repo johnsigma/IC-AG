@@ -1,10 +1,10 @@
-from random import choice, randint, random
+from random import choice, randint, random, randrange
 import json
 
 
 class MSE:
-    def __init__(self, dict, numeroTarefas, numeroProcessadores):
-        self.dict = dict
+    def __init__(self, dic, numeroTarefas, numeroProcessadores):
+        self.dic = dic
         self.numeroTarefas = numeroTarefas
         self.numeroProcessadores = numeroProcessadores
 
@@ -15,11 +15,23 @@ class MSE:
             'escalonamento': []
         }
 
-        listaTarefas = list(self.dict.values())
+        listaTarefas = list(self.dic.values())
+
+        i = 0
 
         while len(cromossomo['escalonamento']) < self.numeroTarefas:
 
-            tarefa = choice(listaTarefas)
+            indiceTarefa = None
+
+            tarefa = None
+
+            if i == 0:
+                indiceTarefa = 0
+                tarefa = listaTarefas[indiceTarefa]
+
+            else:
+                indiceTarefa = randrange(len(listaTarefas))
+                tarefa = listaTarefas[indiceTarefa]
 
             numeroTarefa = tarefa['tarefa']
             predecessores = tarefa['predecessores']
@@ -28,11 +40,16 @@ class MSE:
                 cromossomo['escalonamento'].append(numeroTarefa)
                 cromossomo['alocacao'].append(
                     choice(range(self.numeroProcessadores)))
+                listaTarefas.pop(indiceTarefa)
+                if i % 10 == 0:
+                    pass
+                i += 1
 
         return cromossomo
 
     def predecessores_alocados(self, cromossomo, predecessores):
-        predecessoresAlocados = set(predecessores).issubset(set(cromossomo))
+        predecessoresAlocados = set(
+            predecessores).issubset(set(cromossomo))
 
         return predecessoresAlocados
 
@@ -44,34 +61,6 @@ class MSE:
             populacao.append(self.cria_cromossomo())
 
         return populacao
-
-    def makespan(self, cromossomo):
-        tempoProcessamento = [0] * self.numeroProcessadores
-
-        for indice, tarefa in enumerate(cromossomo['escalonamento']):
-            processador = cromossomo['alocacao'][indice]
-
-            tempoComunicacaoAcc = 0
-
-            predecessores = self.dict[tarefa]['predecessores']
-
-            if len(predecessores) > 0:
-                for i, predecessor in enumerate(predecessores):
-                    indicePredecessor = cromossomo['escalonamento'].index(
-                        predecessor)
-                    processadorPredecessor = cromossomo['alocacao'][indicePredecessor]
-
-                    if processadorPredecessor != processador:
-                        tempoComunicacao = int(
-                            self.dict[tarefa]["custos_comunicacao"][i])
-                        # print(f'Comunicacao entre {predecessor} e {tarefa} no processador {
-                        #       processadorPredecessor} e {processador} = {tempoComunicacao}')
-                        tempoComunicacaoAcc += tempoComunicacao
-
-            tempoProcessamento[processador] += int(self.dict[tarefa]['tempos_execucao'][processador]) + \
-                tempoComunicacaoAcc
-
-        return max(tempoProcessamento)
 
     def spx_alocacao(self, pai1, pai2):
 
@@ -114,7 +103,7 @@ class MSE:
 
     def individuo_valido(self, individuo):
         for tarefa in individuo['escalonamento']:
-            predecessores = self.dict[tarefa]['predecessores']
+            predecessores = self.dic[tarefa]['predecessores']
 
             if not self.predecessores_alocados(individuo['escalonamento'], predecessores):
                 print('Individuo inválido')
@@ -132,7 +121,7 @@ class MSE:
                 tarefa1 = choice(individuo)
                 posicaoTarefa1 = individuo.index(tarefa1)
 
-            predecessoresTarefa1 = self.dict[tarefa1]['predecessores']
+            predecessoresTarefa1 = self.dic[tarefa1]['predecessores']
             limiteInferior = 0
 
             for tarefa in individuo:
@@ -151,7 +140,7 @@ class MSE:
                     limiteInferior, len(individuo) - 1)
 
             tarefa2 = individuo[novaPosicaoTarefa1]
-            predecessoresTarefa2 = self.dict[tarefa2]['predecessores']
+            predecessoresTarefa2 = self.dic[tarefa2]['predecessores']
 
             for i in range(0, posicaoTarefa1):
 
@@ -182,6 +171,8 @@ class MSE:
                 return novoIndividuo
 
     def ajuste_fitness(self, fitness):
+        if fitness == 0:
+            return 1
         return 1 / fitness
 
     def soma_fitness(self, fitness):
@@ -233,26 +224,47 @@ class MSE:
 
         melhorIndividuo = None
 
-        medias = []
+        mediasFitness = []
+        mediasMakespan = []
+        mediasLoadBalance = []
 
         for iteracao in range(numeroIteracoes):
 
             if iteracao == 0:
+                individuo = min(
+                    populacao, key=lambda individuo: self.fitness(individuo))
                 melhorIndividuo = {
-                    'individuo': min(populacao, key=lambda individuo: self.fitness(individuo)),
+                    'individuo': individuo,
                     'iteracao': iteracao + 1,
-                    'fitness': self.fitness(min(populacao, key=lambda individuo: self.fitness(individuo)))
+                    'fitness': self.fitness(individuo),
+                    'makespan': self.makespan(individuo),
+                    'loadBalance': self.load_balance(individuo)
                 }
 
             fitnessMedia = sum([self.fitness(individuo)
                                for individuo in populacao]) / len(populacao)
-            medias.append(fitnessMedia)
-            print(f'Média fitness da população: {fitnessMedia:.7f}')
+            mediasFitness.append(fitnessMedia)
+            # print(f'\nMédia fitness da população: {fitnessMedia:.7f}')
+
+            fitnessMediaMakespan = sum([self.makespan(individuo)
+                                        for individuo in populacao]) / len(populacao)
+            mediasMakespan.append(fitnessMediaMakespan)
+            # print(f'\nMédia makespan da população: {fitnessMediaMakespan:.7f}')
+
+            fitnessMediaLoadBalance = sum([self.load_balance(individuo)
+                                           for individuo in populacao]) / len(populacao)
+            mediasLoadBalance.append(fitnessMediaLoadBalance)
+            # print(f'\nMédia loadbalance da população: {fitnessMediaLoadBalance:.7f}')
+
+            individuo = min(
+                populacao, key=lambda individuo: self.fitness(individuo))
 
             melhorIndividuoDaPopulacao = {
-                'individuo': min(populacao, key=lambda individuo: self.fitness(individuo)),
+                'individuo': individuo,
                 'iteracao': iteracao + 1,
-                'fitness': self.fitness(min(populacao, key=lambda individuo: self.fitness(individuo)))
+                'fitness': self.fitness(individuo),
+                'makespan': self.makespan(individuo),
+                'loadBalance': self.load_balance(individuo)
             }
 
             if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
@@ -331,12 +343,7 @@ class MSE:
 
             populacao = novaPopulacao.copy()
 
-        print('Melhor individuo:')
-        print(f'Iteração: {melhorIndividuo["iteracao"]}')
-        print(f'Fitness: {melhorIndividuo["fitness"]}')
-        print(json.dumps(melhorIndividuo, indent=4))
-
-        return medias
+        return mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo
 
     def load_balance(self, individuo):
         tempoProcessadores = [0] * self.numeroProcessadores
@@ -344,7 +351,7 @@ class MSE:
         for indice, tarefa in enumerate(individuo['escalonamento']):
             processador = individuo['alocacao'][indice]
             tempoExecucao = int(
-                self.dict[tarefa]['tempos_execucao'][processador])
+                self.dic[tarefa]['tempos_execucao'][processador])
 
             tempoProcessadores[processador] += tempoExecucao
 
@@ -353,7 +360,35 @@ class MSE:
 
         return cargaMaxima - cargaMinima
 
-    def fitness(self, individuo, alpha=0.5):
+    def makespan(self, cromossomo):
+        tempoProcessamento = [0] * self.numeroProcessadores
+
+        for indice, tarefa in enumerate(cromossomo['escalonamento']):
+            processador = cromossomo['alocacao'][indice]
+
+            tempoComunicacaoAcc = 0
+
+            predecessores = self.dic[tarefa]['predecessores']
+
+            if len(predecessores) > 0:
+                for i, predecessor in enumerate(predecessores):
+                    indicePredecessor = cromossomo['escalonamento'].index(
+                        predecessor)
+                    processadorPredecessor = cromossomo['alocacao'][indicePredecessor]
+
+                    if processadorPredecessor != processador:
+                        tempoComunicacao = int(
+                            self.dic[tarefa]["custos_comunicacao"][i])
+                        # print(f'Comunicacao entre {predecessor} e {tarefa} no processador {
+                        #       processadorPredecessor} e {processador} = {tempoComunicacao}')
+                        tempoComunicacaoAcc += tempoComunicacao
+
+            tempoProcessamento[processador] += int(self.dic[tarefa]['tempos_execucao'][processador]) + \
+                tempoComunicacaoAcc
+
+        return max(tempoProcessamento)
+
+    def fitness(self, individuo, alpha=0.3):
         makespan = self.makespan(individuo)
         loadBalance = self.load_balance(individuo)
 
