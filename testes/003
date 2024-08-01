@@ -1,4 +1,4 @@
-Experimento 4-20-30 (usando makespan como fitness):
+Experimento 4-20-30 (usando makespan como fitness, com 4 números aleatórios, preservando pais):
 Tarefas = 50
 numeroIteracoes = 500
 tamanhoPopulacao = 20

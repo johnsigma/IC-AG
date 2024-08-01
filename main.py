@@ -30,12 +30,12 @@ if __name__ == '__main__':
                         arquivo = diretorioBase + \
                             f'{numTarefas}/rand0{indiceGrafo}-{numProcessadores}-{variacaoTempoExecucao}-{variacaoCustoComunicacao}.stg'
 
-                        numeroIteracoes = 500
-                        tamanhoPopulacao = 20
+                        numeroIteracoes = 1500
+                        tamanhoPopulacao = 15
                         chanceCrossoverAlocacao = 0.4
                         chanceCrossoverEscalonamento = 0.4
-                        chanceMutacaoAlocacao = 0.2
-                        chanceMutacaoEscalonamento = 0.2
+                        chanceMutacaoAlocacao = 0.3
+                        chanceMutacaoEscalonamento = 0.3
                         taxaElitismo = 0.35
 
                         dic = funcoes.ler_arquivo_ghe(
@@ -43,8 +43,8 @@ if __name__ == '__main__':
 
                         mse = MSE(dic, numTarefas+2, numProcessadores)
 
-                        mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo = mse.inicio(tamanhoPopulacao, numeroIteracoes, chanceCrossoverAlocacao,
-                                                                                                       chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo)
+                        mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo = mse.inicio(
+                            tamanhoPopulacao, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo)
                         print('\n----------------------------------------\n')
                         print(arquivo)
                         print('Melhor individuo:')

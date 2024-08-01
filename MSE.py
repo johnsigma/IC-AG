@@ -219,6 +219,7 @@ class MSE:
 
         return populacaoOrdenada[:numeroElitismo]
 
+    # Código com a geração de 4 números aleatórios, preservando pais
     def inicio(self, tamanhoPopulacao, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo):
         populacao = self.cria_populacao_inicial(tamanhoPopulacao)
 
@@ -345,6 +346,145 @@ class MSE:
 
         return mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo
 
+    # Código com a geração de 2 números aleatórios, sempre gerando filhos diferentes dos pais
+
+    # def inicio(self, tamanhoPopulacao, numeroIteracoes, chanceCrossover, chanceMutacao, taxaElitismo):
+
+    #     populacao = self.cria_populacao_inicial(tamanhoPopulacao)
+
+    #     melhorIndividuo = None
+
+    #     mediasFitness = []
+    #     mediasMakespan = []
+    #     mediasLoadBalance = []
+
+    #     for iteracao in range(numeroIteracoes):
+
+    #         if iteracao == 0:
+    #             individuo = min(
+    #                 populacao, key=lambda individuo: self.fitness(individuo))
+    #             melhorIndividuo = {
+    #                 'individuo': individuo,
+    #                 'iteracao': iteracao + 1,
+    #                 'fitness': self.fitness(individuo),
+    #                 'makespan': self.makespan(individuo),
+    #                 'loadBalance': self.load_balance(individuo)
+    #             }
+
+    #         fitnessMedia = sum([self.fitness(individuo)
+    #                            for individuo in populacao]) / len(populacao)
+    #         mediasFitness.append(fitnessMedia)
+    #         # print(f'\nMédia fitness da população: {fitnessMedia:.7f}')
+
+    #         fitnessMediaMakespan = sum([self.makespan(individuo)
+    #                                     for individuo in populacao]) / len(populacao)
+    #         mediasMakespan.append(fitnessMediaMakespan)
+    #         # print(f'\nMédia makespan da população: {fitnessMediaMakespan:.7f}')
+
+    #         fitnessMediaLoadBalance = sum([self.load_balance(individuo)
+    #                                        for individuo in populacao]) / len(populacao)
+    #         mediasLoadBalance.append(fitnessMediaLoadBalance)
+    #         # print(f'\nMédia loadbalance da população: {fitnessMediaLoadBalance:.7f}')
+
+    #         individuo = min(
+    #             populacao, key=lambda individuo: self.fitness(individuo))
+
+    #         melhorIndividuoDaPopulacao = {
+    #             'individuo': individuo,
+    #             'iteracao': iteracao + 1,
+    #             'fitness': self.fitness(individuo),
+    #             'makespan': self.makespan(individuo),
+    #             'loadBalance': self.load_balance(individuo)
+    #         }
+
+    #         if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
+    #             melhorIndividuo = melhorIndividuoDaPopulacao
+
+    #         elite = self.elitismo(populacao, taxaElitismo)
+
+    #         novaPopulacao = []
+
+    #         if iteracao == numeroIteracoes - 1:
+    #             pass
+
+    #         while len(novaPopulacao) < tamanhoPopulacao - len(elite):
+
+    #             if iteracao == numeroIteracoes - 1:
+    #                 pass
+
+    #             pai1 = populacao[self.selecao_roleta(populacao)]
+
+    #             while pai1 in elite:
+    #                 pai1 = populacao[self.selecao_roleta(populacao)]
+
+    #             pai2 = populacao[self.selecao_roleta(populacao)]
+
+    #             while pai2 in elite:
+    #                 pai2 = populacao[self.selecao_roleta(populacao)]
+
+    #             while pai1 == pai2:
+    #                 pai2 = populacao[self.selecao_roleta(populacao)]
+
+    #             filhosAlocacao = [pai1['alocacao'], pai2['alocacao']]
+    #             filhosEscalonamento = [
+    #                 pai1['escalonamento'], pai2['escalonamento']]
+
+    #             if random() < chanceCrossover:
+    #                 filhosAlocacao = self.spx_alocacao(
+    #                     filhosAlocacao[0], filhosAlocacao[1])
+    #             else:
+    #                 filhosEscalonamento = self.spx_escalonamento(
+    #                     filhosEscalonamento[0], filhosEscalonamento[1])
+
+    #             if random() < chanceMutacao:
+    #                 filhosAlocacao[0] = self.pm(filhosAlocacao[0])
+    #                 filhosAlocacao[1] = self.pm(filhosAlocacao[1])
+    #             else:
+    #                 filhosEscalonamento[0] = self.stm(filhosEscalonamento[0])
+    #                 filhosEscalonamento[1] = self.stm(filhosEscalonamento[1])
+
+    #             filho1 = {
+    #                 'alocacao': filhosAlocacao[0],
+    #                 'escalonamento': filhosEscalonamento[0]
+    #             }
+
+    #             filho2 = {
+    #                 'alocacao': filhosAlocacao[1],
+    #                 'escalonamento': filhosEscalonamento[1]
+    #             }
+
+    #             if self.individuo_valido(filho1):
+    #                 novaPopulacao.append(filho1)
+    #             if self.individuo_valido(filho2) and len(novaPopulacao) < tamanhoPopulacao - len(elite):
+    #                 novaPopulacao.append(filho2)
+
+    #         # print(f'Iteração {iteracao + 1} concluída')
+
+    #         for individuo in elite:
+    #             novaPopulacao.append(individuo)
+
+    #         populacao = novaPopulacao.copy()
+
+    #     return mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo
+
+    # Load balance "antigo"
+    # def load_balance(self, individuo):
+    #     tempoProcessadores = [0] * self.numeroProcessadores
+
+    #     for indice, tarefa in enumerate(individuo['escalonamento']):
+    #         processador = individuo['alocacao'][indice]
+    #         tempoExecucao = int(
+    #             self.dic[tarefa]['tempos_execucao'][processador])
+
+    #         tempoProcessadores[processador] += tempoExecucao
+
+    #     cargaMaxima = max(tempoProcessadores)
+    #     cargaMinima = min(tempoProcessadores)
+
+    #     return cargaMaxima - cargaMinima
+
+    # Load balance "novo", inspirado no trabalho do Breno
+
     def load_balance(self, individuo):
         tempoProcessadores = [0] * self.numeroProcessadores
 
@@ -355,10 +495,13 @@ class MSE:
 
             tempoProcessadores[processador] += tempoExecucao
 
-        cargaMaxima = max(tempoProcessadores)
-        cargaMinima = min(tempoProcessadores)
+        tempoProcessamentoTotal = sum(tempoProcessadores)
 
-        return cargaMaxima - cargaMinima
+        tempoMedioProcessamento = tempoProcessamentoTotal / self.numeroProcessadores
+
+        makespan = self.makespan(individuo)
+
+        return makespan / tempoMedioProcessamento
 
     def makespan(self, cromossomo):
         tempoProcessamento = [0] * self.numeroProcessadores
@@ -388,7 +531,7 @@ class MSE:
 
         return max(tempoProcessamento)
 
-    def fitness(self, individuo, alpha=0.3):
+    def fitness(self, individuo, alpha=0.5):
         makespan = self.makespan(individuo)
         loadBalance = self.load_balance(individuo)
 
