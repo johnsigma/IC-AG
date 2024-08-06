@@ -45,37 +45,42 @@ def ler_arquivo_ghe(nomeArquivo, numProcessadores):
 
     dicionarioTarefas = {}
 
-    with open(nomeArquivo, 'r') as arquivo:
-        # Itera sobre cada linha no arquivo
-        i = 0
-        for linha in arquivo:
+    try:
 
-            if i == 0:
+        with open(nomeArquivo, 'r') as arquivo:
+            # Itera sobre cada linha no arquivo
+            i = 0
+            for linha in arquivo:
+
+                if i == 0:
+                    i += 1
+                    continue
+
+                linha = linha.strip().split(' ')
+                linha_formatada = [valor for valor in linha if valor != '']
+                # print(json.dumps(linha_formatada, indent=4))
+
+                predecessores = []
+                for predecessor in linha_formatada[numProcessadores+2::2]:
+                    predecessores.append(predecessor)
+
+                custosComunicacao = []
+                for custoComunicacao in linha_formatada[numProcessadores+3::2]:
+                    custosComunicacao.append(custoComunicacao)
+
+                dicionarioTarefas[linha_formatada[0]] = {
+                    'tarefa': linha_formatada[0],
+                    'tempos_execucao': copy.deepcopy(linha_formatada[1:numProcessadores+1]),
+                    'num_predecessores': copy.deepcopy(linha_formatada[numProcessadores+1]),
+                    'predecessores': predecessores,
+                    'custos_comunicacao': custosComunicacao
+                }
                 i += 1
-                continue
+                # print(json.dumps(dicionarioTarefas, indent=4))
+        return dicionarioTarefas
 
-            linha = linha.strip().split(' ')
-            linha_formatada = [valor for valor in linha if valor != '']
-            # print(json.dumps(linha_formatada, indent=4))
-
-            predecessores = []
-            for predecessor in linha_formatada[numProcessadores+2::2]:
-                predecessores.append(predecessor)
-
-            custosComunicacao = []
-            for custoComunicacao in linha_formatada[numProcessadores+3::2]:
-                custosComunicacao.append(custoComunicacao)
-
-            dicionarioTarefas[linha_formatada[0]] = {
-                'tarefa': linha_formatada[0],
-                'tempos_execucao': copy.deepcopy(linha_formatada[1:numProcessadores+1]),
-                'num_predecessores': copy.deepcopy(linha_formatada[numProcessadores+1]),
-                'predecessores': predecessores,
-                'custos_comunicacao': custosComunicacao
-            }
-            i += 1
-            # print(json.dumps(dicionarioTarefas, indent=4))
-    return dicionarioTarefas
+    except Exception as e:
+        return None
 
 
 # def ler_arquivo_ghe(nomeArquivo, numProcessadores):

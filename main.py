@@ -1,5 +1,3 @@
-import json
-import sys
 import funcoes
 from MSE import MSE
 from random import seed
@@ -30,13 +28,13 @@ if __name__ == '__main__':
                         arquivo = diretorioBase + \
                             f'{numTarefas}/rand0{indiceGrafo}-{numProcessadores}-{variacaoTempoExecucao}-{variacaoCustoComunicacao}.stg'
 
-                        numeroIteracoes = 1500
-                        tamanhoPopulacao = 15
-                        chanceCrossoverAlocacao = 0.4
-                        chanceCrossoverEscalonamento = 0.4
-                        chanceMutacaoAlocacao = 0.3
-                        chanceMutacaoEscalonamento = 0.3
-                        taxaElitismo = 0.35
+                        numeroIteracoes = 3000
+                        tamanhoPopulacao = 20
+                        chanceCrossoverAlocacao = 0.35
+                        chanceCrossoverEscalonamento = 0.35
+                        chanceMutacaoAlocacao = 0.15
+                        chanceMutacaoEscalonamento = 0.15
+                        taxaElitismo = 0.2
 
                         dic = funcoes.ler_arquivo_ghe(
                             arquivo, numProcessadores)
