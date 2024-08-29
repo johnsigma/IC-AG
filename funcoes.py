@@ -91,6 +91,8 @@ def ler_arquivo_ghe(nomeArquivo, numProcessadores):
         return dicionarioTarefas
 
     except Exception as e:
+        print(f'Erro ao ler o arquivo {nomeArquivo}')
+        print(e)
         return None
 
 
@@ -333,11 +335,19 @@ def cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados):
     return custosComunicacao
 
 
+def writeFormatCol(data):
+    colContent = str(data).rjust(11)
+    return colContent
+
+
 def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados, nomeArquivo, numTarefas):
 
     f = open(nomeArquivo, 'w')
 
-    f.write(f'{numTarefas-2}    {numProcessadores}')
+    # f.write(f'          {numTarefas-2}          {numProcessadores}')
+    f.write(writeFormatCol(numTarefas-2))
+    f.write(writeFormatCol(numProcessadores))
+    f.write('\n')
 
     for chave in dicionarioSTG:
         tarefa = dicionarioSTG[chave]
@@ -359,13 +369,21 @@ def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados
         # for predecessor in predecessores:
         #     predecessoresStr += f'{predecessor}    '
 
-        strAux = ''
+        f.write(writeFormatCol(tarefa["tarefa"]))
+        for tempo in temposExecucao.split():
+            f.write(writeFormatCol(tempo))
 
+        f.write(writeFormatCol(numPredecessores))
+
+        strAux = ''
         for (custoComunicacao, predecessor) in zip(custosComunicacao.split(), predecessores):
             strAux += f'{predecessor}    {custoComunicacao}    '
+            f.write(writeFormatCol(predecessor))
+            f.write(writeFormatCol(custoComunicacao))
 
-        f.write(
-            f'\n{tarefa["tarefa"]}    {temposExecucao}{numPredecessores}    {strAux}')
+        # f.write(
+        #     f'\n{tarefa["tarefa"]}    {temposExecucao}{numPredecessores}    {strAux}')
+        f.write('\n')
 
     f.close()
 
@@ -513,8 +531,8 @@ def save_dataframe_to_txt(df, filename):
 def converte_grafos_reais_stg_em_ghe():
     basePath = 'grafos_reais/'
 
-    listaArquivos = [f'{basePath}robot.stg', f'{
-        basePath}sparse.stg', f'{basePath}fpppp.stg']
+    listaArquivos = [f'{basePath}robot', f'{
+        basePath}sparse', f'{basePath}fpppp']
 
     for arquivo in listaArquivos:
 
@@ -522,7 +540,7 @@ def converte_grafos_reais_stg_em_ghe():
         numTarefas = 0
 
         numTarefas, dicionarioSTG = ler_arquivo(
-            arquivo, numTarefas, dicionarioSTG)
+            f'{arquivo}.stg', numTarefas, dicionarioSTG)
 
         numProcessadoresLista = [2, 4, 8, 16]
         variacaoCustoComputacionalLista = [2, 20, 100]

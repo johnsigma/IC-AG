@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
     passo = 3
 
-    melhoresIndividuosMSE = experimento_mse(listaProcessadores, variacaoTempoExecucaoLista, variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, iteracoes_mse,
-                                            tamanhoPopulacao_mse, chanceCrossoverAlocacao_mse, chanceCrossoverEscalonamento_mse, chanceMutacaoAlocacao_mse, chanceMutacaoEscalonamento_mse, taxaElitismo_mse, passo)
+    # melhoresIndividuosMSE = experimento_mse(listaProcessadores, variacaoTempoExecucaoLista, variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, iteracoes_mse,
+    #                                         tamanhoPopulacao_mse, chanceCrossoverAlocacao_mse, chanceCrossoverEscalonamento_mse, chanceMutacaoAlocacao_mse, chanceMutacaoEscalonamento_mse, taxaElitismo_mse, passo)
 
     # print('MSE')
     # print(json.dumps(melhoresIndividuosMSE, indent=4))
@@ -111,15 +111,15 @@ if __name__ == '__main__':
     resultados_breno = experimento_breno(
         listaProcessadores, variacaoTempoExecucaoLista, variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, passo)
 
-    # print('Breno')
-    # print(json.dumps(resultados_breno, indent=4))
+    print('Breno')
+    print(json.dumps(resultados_breno, indent=4))
 
-    dicionarioResultados = melhoresIndividuosMSE | resultados_breno
+    # dicionarioResultados = melhoresIndividuosMSE | resultados_breno
 
     # funcoes.salva_resultados('resultados.pk1', dicionarioResultados)
 
     # dicionarioResultados = funcoes.carrega_resultados('resultados.pk1')
 
-    df = funcoes.compare_algorithms(dicionarioResultados)
+    # df = funcoes.compare_algorithms(dicionarioResultados)
 
-    funcoes.save_dataframe_to_txt(df, 'resultados/02.txt')
+    # funcoes.save_dataframe_to_txt(df, 'resultados/02.txt')

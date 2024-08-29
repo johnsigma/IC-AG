@@ -3,10 +3,11 @@ import json
 
 
 class MSE:
-    def __init__(self, dic, numeroTarefas, numeroProcessadores):
+    def __init__(self, dic, numeroTarefas, numeroProcessadores, alpha=0.5):
         self.dic = dic
         self.numeroTarefas = numeroTarefas
         self.numeroProcessadores = numeroProcessadores
+        self.alpha = alpha
 
     def cria_cromossomo(self):
 
@@ -531,8 +532,8 @@ class MSE:
 
         return max(tempoProcessamento)
 
-    def fitness(self, individuo, alpha=0.5):
+    def fitness(self, individuo):
         makespan = self.makespan(individuo)
         loadBalance = self.load_balance(individuo)
 
-        return alpha * makespan + (1 - alpha) * loadBalance
+        return self.alpha * makespan + (1 - self.alpha) * loadBalance
