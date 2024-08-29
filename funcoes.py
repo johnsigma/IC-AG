@@ -1,5 +1,16 @@
 import copy
+import pickle
 import random
+
+import numpy as np
+import pandas as pd
+from scipy.stats import wilcoxon
+
+
+# Configurações para exibir todas as colunas e ajustar a largura
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 100)
+pd.set_option('display.max_colwidth', None)
 
 PORCENTAGEM_SELECAO = 0.5
 
@@ -311,7 +322,12 @@ def cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados):
             custosComunicacao += '0    '
     else:
         for _ in range(numPredecessores):
-            custoComunicacao = random.randint(1, variacaoDados)
+
+            custoComunicacao = 0
+
+            if variacaoDados != 0:
+                custoComunicacao = random.randint(1, variacaoDados)
+
             custosComunicacao += f'{custoComunicacao}    '
 
     return custosComunicacao
@@ -319,7 +335,7 @@ def cria_custo_comunicacao(tempoExecucaoSTG, numPredecessores, variacaoDados):
 
 def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados, nomeArquivo, numTarefas):
 
-    f = open(f'{nomeArquivo[0:-4]}.txt', 'w')
+    f = open(nomeArquivo, 'w')
 
     f.write(f'{numTarefas-2}    {numProcessadores}')
 
@@ -338,12 +354,182 @@ def escreve_ghe(dicionarioSTG, numProcessadores, variacaoExecucao, variacaoDados
         custosComunicacao = cria_custo_comunicacao(
             tempoExecucaoSTG, numPredecessores, variacaoDados)
 
-        predecessoresStr = ''
+        # predecessoresStr = ''
 
-        for predecessor in predecessores:
-            predecessoresStr += f'{predecessor}    '
+        # for predecessor in predecessores:
+        #     predecessoresStr += f'{predecessor}    '
+
+        strAux = ''
+
+        for (custoComunicacao, predecessor) in zip(custosComunicacao.split(), predecessores):
+            strAux += f'{predecessor}    {custoComunicacao}    '
 
         f.write(
-            f'\n{tarefa["tarefa"]}    {temposExecucao}{numPredecessores}    {predecessoresStr}{custosComunicacao}')
+            f'\n{tarefa["tarefa"]}    {temposExecucao}{numPredecessores}    {strAux}')
 
     f.close()
+
+
+def salva_resultados(enderecoArquivo, dicionarioResultados):
+
+    with open(enderecoArquivo, 'wb') as f:
+        pickle.dump(dicionarioResultados, f)
+
+    print('Resultados salvos com sucesso')
+
+
+def carrega_resultados(enderecoArquivo):
+
+    with open(enderecoArquivo, 'rb') as f:
+        dicionarioResultados = pickle.load(f)
+
+    return dicionarioResultados
+
+
+def compare_algorithms(data):
+    """
+    Compara os resultados de makespan e load balance de diferentes algoritmos.
+
+    Args:
+        data: Dicionário com os resultados dos algoritmos.
+
+    Returns:
+        DataFrame: DataFrame com as métricas estatísticas para cada algoritmo.
+    """
+
+    results = []
+    for algorithm, algorithm_data in data.items():
+        makespans = []
+        load_balances = []
+        for num_tasks, graphs in algorithm_data.items():
+            for graph, values in graphs.items():
+                makespans.append(values['makespan'])
+                load_balances.append(values['loadBalance'])
+
+        results.append({
+            'Algorithm': algorithm,
+            'Makespan_Mean': np.mean(makespans),
+            'Makespan_Std': np.std(makespans),
+            'Makespan_Min': np.min(makespans),
+            'Makespan_Max': np.max(makespans),
+            'LoadBalance_Mean': np.mean(load_balances),
+            'LoadBalance_Std': np.std(load_balances),
+            'LoadBalance_Min': np.min(load_balances),
+            'LoadBalance_Max': np.max(load_balances)
+        })
+
+    return pd.DataFrame(results)
+
+
+def compare_algorithms2(data):
+    """
+    Compara os resultados de load balance e makespan dos diferentes algoritmos
+    e retorna os resultados como um único DataFrame.
+
+    Args:
+    data (dict): Dicionário contendo os dados dos algoritmos, conforme a estrutura descrita.
+
+    Returns:
+    DataFrame: DataFrame contendo as comparações de makespan e load balance para cada par de algoritmos.
+    """
+    algorithms = list(data.keys())
+    tasks = list(next(iter(data.values())).keys())
+    graphs = list(next(iter(next(iter(data.values())).values())).keys())
+
+    comparison_results = []
+
+    for alg1 in algorithms:
+        alg1_makespan_values = []
+        alg1_loadBalance_values = []
+        for task in tasks:
+            for graph in graphs:
+                if graph in data[alg1][task]:
+                    alg1_makespan_values.append(
+                        data[alg1][task][graph]['makespan'])
+                    alg1_loadBalance_values.append(
+                        data[alg1][task][graph]['loadBalance'])
+
+        mean_makespan_alg1 = np.mean(alg1_makespan_values)
+        std_makespan_alg1 = np.std(alg1_makespan_values)
+        mean_loadBalance_alg1 = np.mean(alg1_loadBalance_values)
+        std_loadBalance_alg1 = np.std(alg1_loadBalance_values)
+
+        for alg2 in algorithms:
+            if alg1 != alg2:
+                alg2_makespan_values = []
+                alg2_loadBalance_values = []
+                for task in tasks:
+                    for graph in graphs:
+                        if graph in data[alg2][task]:
+                            alg2_makespan_values.append(
+                                data[alg2][task][graph]['makespan'])
+                            alg2_loadBalance_values.append(
+                                data[alg2][task][graph]['loadBalance'])
+
+                if alg1_makespan_values and alg2_makespan_values:
+                    stat_makespan, p_value_makespan = wilcoxon(
+                        alg1_makespan_values, alg2_makespan_values)
+                    stat_loadBalance, p_value_loadBalance = wilcoxon(
+                        alg1_loadBalance_values, alg2_loadBalance_values)
+
+                    comparison_results.append({
+                        "Algorithm 1": alg1,
+                        "Algorithm 2": alg2,
+                        "Mean Makespan Alg1": mean_makespan_alg1,
+                        "Std Makespan Alg1": std_makespan_alg1,
+                        "Mean Makespan Alg2": np.mean(alg2_makespan_values),
+                        "Std Makespan Alg2": np.std(alg2_makespan_values),
+                        "Wilcoxon Makespan Stat": stat_makespan,
+                        "Wilcoxon Makespan p-value": p_value_makespan,
+                        "Mean LoadBalance Alg1": mean_loadBalance_alg1,
+                        "Std LoadBalance Alg1": std_loadBalance_alg1,
+                        "Mean LoadBalance Alg2": np.mean(alg2_loadBalance_values),
+                        "Std LoadBalance Alg2": np.std(alg2_loadBalance_values),
+                        "Wilcoxon LoadBalance Stat": stat_loadBalance,
+                        "Wilcoxon LoadBalance p-value": p_value_loadBalance
+                    })
+
+    df_comparison = pd.DataFrame(comparison_results)
+
+    return df_comparison
+
+
+def save_dataframe_to_txt(df, filename):
+    """
+    Salva a estrutura de um DataFrame em um arquivo .txt.
+
+    Args:
+    df (pd.DataFrame): O DataFrame que você deseja salvar.
+    filename (str): O caminho/nome do arquivo .txt onde o DataFrame será salvo.
+    """
+    # Convertendo o DataFrame para uma string formatada
+    df_string = df.to_string(index=False)
+
+    # Gravando a string formatada em um arquivo .txt
+    with open(filename, 'w') as file:
+        file.write(df_string)
+
+
+def converte_grafos_reais_stg_em_ghe():
+    basePath = 'grafos_reais/'
+
+    listaArquivos = [f'{basePath}robot.stg', f'{
+        basePath}sparse.stg', f'{basePath}fpppp.stg']
+
+    for arquivo in listaArquivos:
+
+        dicionarioSTG = {}
+        numTarefas = 0
+
+        numTarefas, dicionarioSTG = ler_arquivo(
+            arquivo, numTarefas, dicionarioSTG)
+
+        numProcessadoresLista = [2, 4, 8, 16]
+        variacaoCustoComputacionalLista = [2, 20, 100]
+        variacaoCustoComunicacaoLista = [0, 30, 100]
+
+        for numProcessadores in numProcessadoresLista:
+            for variacaoCustoComputacional in variacaoCustoComputacionalLista:
+                for variacaoCustoComunicacao in variacaoCustoComunicacaoLista:
+                    escreve_ghe(dicionarioSTG, numProcessadores, variacaoCustoComputacional, variacaoCustoComunicacao,
+                                f'{arquivo}-{numProcessadores}-{variacaoCustoComputacional}-{variacaoCustoComunicacao}.stg', numTarefas)
