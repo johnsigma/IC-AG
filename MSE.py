@@ -42,17 +42,18 @@ class MSE:
                 cromossomo['alocacao'].append(
                     choice(range(self.numeroProcessadores)))
                 listaTarefas.pop(indiceTarefa)
-                if i % 10 == 0:
-                    pass
+
                 i += 1
 
         return cromossomo
 
     def predecessores_alocados(self, cromossomo, predecessores):
-        predecessoresAlocados = set(
-            predecessores).issubset(set(cromossomo))
+        # predecessoresAlocados = set(
+        #     predecessores).issubset(set(cromossomo))
 
-        return predecessoresAlocados
+        # return predecessoresAlocados
+
+        return all(predecessor in cromossomo for predecessor in predecessores)
 
     def cria_populacao_inicial(self, tamanhoPopulacao):
 

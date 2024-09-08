@@ -122,4 +122,4 @@ if __name__ == '__main__':
 
     # df = funcoes.compare_algorithms(dicionarioResultados)
 
-    # funcoes.save_dataframe_to_txt(df, 'resultados/02.txt')
+    # funcoes.salva_dataframe_em_txt(df, 'resultados/02.txt')

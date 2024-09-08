@@ -1,2 +1,0 @@
-01 - Lista processadores = 4; variação tempo de execução = 20; variação custo de comunicação = 30; lista de tarefas = 50; iterações mse = 1000; tamanho da população mse = 20; chance de crossover = 0.2; chance de mutação = 0.1; taxa de elitismo = 0.25
-02 - Lista processadores = 4; variação tempo de execução = 20; variação custo de comunicação = 30; lista de tarefas = 100; iterações mse = 1000; tamanho da população mse = 25; chance de crossover = 0.4; chance de mutação = 0.2; taxa de elitismo = 0.3

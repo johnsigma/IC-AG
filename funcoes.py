@@ -46,7 +46,7 @@ def ler_numero_tarefas(nomeArquivo):
                 substrings = linha.split()
                 listaAux = [int(substring) for substring in substrings]
                 numTarefas = listaAux[0]
-                return numTarefas
+                return int(numTarefas) + 2
 
         print('Erro ao ler o número de tarefas')
         return -1
@@ -512,7 +512,7 @@ def compare_algorithms2(data):
     return df_comparison
 
 
-def save_dataframe_to_txt(df, filename):
+def salva_dataframe_em_txt(df, filename):
     """
     Salva a estrutura de um DataFrame em um arquivo .txt.
 
@@ -521,7 +521,7 @@ def save_dataframe_to_txt(df, filename):
     filename (str): O caminho/nome do arquivo .txt onde o DataFrame será salvo.
     """
     # Convertendo o DataFrame para uma string formatada
-    df_string = df.to_string(index=False)
+    df_string = df.to_string(index=True)
 
     # Gravando a string formatada em um arquivo .txt
     with open(filename, 'w') as file:

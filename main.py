@@ -1,7 +1,9 @@
 import json
-from funcoes import escreve_ghe, ler_arquivo_ghe, ler_numero_tarefas, ler_arquivo
+from funcoes import escreve_ghe, ler_arquivo_ghe, ler_numero_tarefas, ler_arquivo, salva_dataframe_em_txt
 from MSE import MSE
 import numpy as np
+import pandas as pd
+import time
 from task_scheduling import experimento_breno
 
 
@@ -47,15 +49,18 @@ def experimento(listaAlphas, arquivoGrafo, parametrosMSE, numProcessadores=None)
 
 
 if __name__ == '__main__':
+
+    inicio = time.time()
+
     grafoRobot = 'grafos_experimento/robot-4-20-30.stg'
     grafoSparse = 'grafos_experimento/sparse-4-100-30.stg'
     grafoFpppp = 'grafos_experimento/fpppp-8-20-30.stg'
 
-    grafos = [grafoSparse]
+    grafos = [grafoRobot, grafoSparse, grafoFpppp]
 
     parametrosMSE = {
         'tamanhoPopulacao': 20,
-        'numeroIteracoes': 1,
+        'numeroIteracoes': 2000,
         'chanceCrossoverAlocacao': 0.4,
         'chanceCrossoverEscalonamento': 0.4,
         'chanceMutacaoAlocacao': 0.2,
@@ -89,12 +94,27 @@ if __name__ == '__main__':
 
         # print(json.dumps(resultadoBreno, indent=4))
 
-        resultados['MSE'] = {}
-
         for chave, valor in dicResultadoMSE.items():
-            resultados['MSE']['makespan'] = valor['mediaMakespan']
-            resultados['MSE']['loadBalance'] = valor['mediaLoadBalance']
-            resultados['MSE']['desvioPadraoMakespan'] = valor['desvioPadraoMakespan']
-            resultados['MSE']['desvioPadraoLoadBalance'] = valor['desvioPadraoLoadBalance']
+            resultados[f'MSE_{chave}'] = {}
+            resultados[f'MSE_{chave}']['makespan'] = valor['mediaMakespan']
+            resultados[f'MSE_{
+                chave}']['loadBalance'] = valor['mediaLoadBalance']
+            resultados[f'MSE_{
+                chave}']['desvioPadraoMakespan'] = valor['desvioPadraoMakespan']
+            resultados[f'MSE_{
+                chave}']['desvioPadraoLoadBalance'] = valor['desvioPadraoLoadBalance']
 
-        print(json.dumps(resultados, indent=4))
+        nomeGrafo = grafo.split('/')[1]
+
+        df = pd.DataFrame.from_dict(resultados, orient='index')
+
+        print(df)
+
+        salva_dataframe_em_txt(df, f'resultados/{nomeGrafo}1.txt')
+
+        fim = time.time()
+        tempo_em_segundos = fim - inicio
+        tempo_em_minutos = tempo_em_segundos / 60
+
+        with open('resultados/tempo.txt', 'w') as arquivo:
+            arquivo.write(f'Tempo de execucao: {tempo_em_minutos} minutos')
