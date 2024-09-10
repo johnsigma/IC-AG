@@ -27,6 +27,7 @@ def experimento(listaAlphas, arquivoGrafo, parametrosMSE, numProcessadores=None)
 
         dicResultado[alpha]["makespan"] = []
         dicResultado[alpha]["loadBalance"] = []
+        dicResultado[alpha]['iteracao'] = []
 
         for i in range(1, 10):
 
@@ -39,17 +40,24 @@ def experimento(listaAlphas, arquivoGrafo, parametrosMSE, numProcessadores=None)
             dicResultado[alpha]["makespan"].append(melhorIndividuo["makespan"])
             dicResultado[alpha]["loadBalance"].append(
                 melhorIndividuo["loadBalance"])
+            dicResultado[alpha]['iteracao'].append(melhorIndividuo['iteracao'])
 
         dicResultado[alpha]["mediaMakespan"] = np.mean(
             dicResultado[alpha]["makespan"])
         dicResultado[alpha]["mediaLoadBalance"] = np.mean(
             dicResultado[alpha]["loadBalance"]
         )
+        dicResultado[alpha]["mediaIteracao"] = np.mean(
+            dicResultado[alpha]["iteracao"]
+        )
         dicResultado[alpha]["desvioPadraoMakespan"] = np.std(
             dicResultado[alpha]["makespan"]
         )
         dicResultado[alpha]["desvioPadraoLoadBalance"] = np.std(
             dicResultado[alpha]["loadBalance"]
+        )
+        dicResultado[alpha]["desvioPadraoIteracao"] = np.std(
+            dicResultado[alpha]["iteracao"]
         )
 
     return dicResultado
@@ -66,8 +74,8 @@ if __name__ == "__main__":
     grafos = [grafoRobot, grafoSparse, grafoFpppp]
 
     parametrosMSE = {
-        "tamanhoPopulacao": 20,
-        "numeroIteracoes": 2500,
+        "tamanhoPopulacao": 2,
+        "numeroIteracoes": 20,
         "chanceCrossoverAlocacao": 0.4,
         "chanceCrossoverEscalonamento": 0.4,
         "chanceMutacaoAlocacao": 0.2,
@@ -127,14 +135,15 @@ if __name__ == "__main__":
         for chave, valor in dicResultadoMSE.items():
             resultados[f"MSE_{chave}"] = {}
             resultados[f"MSE_{chave}"]["makespan"] = valor["mediaMakespan"]
-            resultados[f"MSE_{
-                chave}"]["loadBalance"] = valor["mediaLoadBalance"]
+            resultados[f"MSE_{chave}"]["loadBalance"] = valor["mediaLoadBalance"]
+            resultados[f"MSE_{chave}"]["mediaIteracao"] = round(valor["mediaIteracao"], 2)
             resultados[f"MSE_{chave}"]["desvioPadraoMakespan"] = valor[
                 "desvioPadraoMakespan"
             ]
             resultados[f"MSE_{chave}"]["desvioPadraoLoadBalance"] = valor[
                 "desvioPadraoLoadBalance"
             ]
+            resultados[f"MSE_{chave}"]["desvioPadraoIteracao"] = valor["desvioPadraoIteracao"]
 
         nomeGrafo = grafo.split("/")[1]
 
