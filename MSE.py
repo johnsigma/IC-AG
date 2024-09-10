@@ -1,5 +1,4 @@
 from random import choice, randint, random, randrange
-import json
 
 
 class MSE:
@@ -11,16 +10,13 @@ class MSE:
 
     def cria_cromossomo(self):
 
-        cromossomo = {
-            'alocacao': [],
-            'escalonamento': []
-        }
+        cromossomo = {"alocacao": [], "escalonamento": []}
 
         listaTarefas = list(self.dic.values())
 
         i = 0
 
-        while len(cromossomo['escalonamento']) < self.numeroTarefas:
+        while len(cromossomo["escalonamento"]) < self.numeroTarefas:
 
             indiceTarefa = None
 
@@ -34,13 +30,16 @@ class MSE:
                 indiceTarefa = randrange(len(listaTarefas))
                 tarefa = listaTarefas[indiceTarefa]
 
-            numeroTarefa = tarefa['tarefa']
-            predecessores = tarefa['predecessores']
+            numeroTarefa = tarefa["tarefa"]
+            predecessores = tarefa["predecessores"]
 
-            if numeroTarefa not in cromossomo['escalonamento'] and self.predecessores_alocados(cromossomo['escalonamento'], predecessores):
-                cromossomo['escalonamento'].append(numeroTarefa)
-                cromossomo['alocacao'].append(
-                    choice(range(self.numeroProcessadores)))
+            if numeroTarefa not in cromossomo[
+                "escalonamento"
+            ] and self.predecessores_alocados(
+                cromossomo["escalonamento"], predecessores
+            ):
+                cromossomo["escalonamento"].append(numeroTarefa)
+                cromossomo["alocacao"].append(choice(range(self.numeroProcessadores)))
                 listaTarefas.pop(indiceTarefa)
 
                 i += 1
@@ -72,11 +71,9 @@ class MSE:
 
         pontoCorte = randint(0, self.numeroTarefas - 1)
 
-        filho1 = pai1[:pontoCorte] + \
-            pai2[pontoCorte:]
+        filho1 = pai1[:pontoCorte] + pai2[pontoCorte:]
 
-        filho2 = pai2[:pontoCorte] + \
-            pai1[pontoCorte:]
+        filho2 = pai2[:pontoCorte] + pai1[pontoCorte:]
 
         return [filho1, filho2]
 
@@ -104,11 +101,13 @@ class MSE:
         return [filho1, filho2]
 
     def individuo_valido(self, individuo):
-        for tarefa in individuo['escalonamento']:
-            predecessores = self.dic[tarefa]['predecessores']
+        for tarefa in individuo["escalonamento"]:
+            predecessores = self.dic[tarefa]["predecessores"]
 
-            if not self.predecessores_alocados(individuo['escalonamento'], predecessores):
-                print('Individuo inválido')
+            if not self.predecessores_alocados(
+                individuo["escalonamento"], predecessores
+            ):
+                print("Individuo inválido")
                 return False
 
         return True
@@ -123,7 +122,7 @@ class MSE:
                 tarefa1 = choice(individuo)
                 posicaoTarefa1 = individuo.index(tarefa1)
 
-            predecessoresTarefa1 = self.dic[tarefa1]['predecessores']
+            predecessoresTarefa1 = self.dic[tarefa1]["predecessores"]
             limiteInferior = 0
 
             for tarefa in individuo:
@@ -134,15 +133,13 @@ class MSE:
 
                 limiteInferior += 1
 
-            novaPosicaoTarefa1 = randint(
-                limiteInferior, len(individuo) - 1)
+            novaPosicaoTarefa1 = randint(limiteInferior, len(individuo) - 1)
 
             while novaPosicaoTarefa1 == posicaoTarefa1 or novaPosicaoTarefa1 == 0:
-                novaPosicaoTarefa1 = randint(
-                    limiteInferior, len(individuo) - 1)
+                novaPosicaoTarefa1 = randint(limiteInferior, len(individuo) - 1)
 
             tarefa2 = individuo[novaPosicaoTarefa1]
-            predecessoresTarefa2 = self.dic[tarefa2]['predecessores']
+            predecessoresTarefa2 = self.dic[tarefa2]["predecessores"]
 
             for i in range(0, posicaoTarefa1):
 
@@ -196,8 +193,9 @@ class MSE:
 
     def selecao_roleta(self, populacao):
 
-        fitness = [self.ajuste_fitness(self.fitness(individuo))
-                   for individuo in populacao]
+        fitness = [
+            self.ajuste_fitness(self.fitness(individuo)) for individuo in populacao
+        ]
 
         somaFitness = self.soma_fitness(fitness)
 
@@ -209,20 +207,30 @@ class MSE:
             if limiteInferior <= numeroSorteado < limiteSuperior:
                 return i
 
-        print('erro roleta')
+        print("erro roleta")
 
         raise ValueError("Não foi possível selecionar um indivíduo da roleta")
 
     def elitismo(self, populacao, taxaElitismo):
         populacaoOrdenada = sorted(
-            populacao, key=lambda individuo: self.fitness(individuo))
+            populacao, key=lambda individuo: self.fitness(individuo)
+        )
 
         numeroElitismo = int(len(populacao) * taxaElitismo)
 
         return populacaoOrdenada[:numeroElitismo]
 
     # Código com a geração de 4 números aleatórios, preservando pais
-    def inicio(self, tamanhoPopulacao, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo):
+    def inicio(
+        self,
+        tamanhoPopulacao,
+        numeroIteracoes,
+        chanceCrossoverAlocacao,
+        chanceCrossoverEscalonamento,
+        chanceMutacaoAlocacao,
+        chanceMutacaoEscalonamento,
+        taxaElitismo,
+    ):
         populacao = self.cria_populacao_inicial(tamanhoPopulacao)
 
         melhorIndividuo = None
@@ -235,42 +243,45 @@ class MSE:
 
             if iteracao == 0:
                 individuo = min(
-                    populacao, key=lambda individuo: self.fitness(individuo))
+                    populacao, key=lambda individuo: self.fitness(individuo)
+                )
                 melhorIndividuo = {
-                    'individuo': individuo,
-                    'iteracao': iteracao + 1,
-                    'fitness': self.fitness(individuo),
-                    'makespan': self.makespan(individuo),
-                    'loadBalance': self.load_balance(individuo)
+                    "individuo": individuo,
+                    "iteracao": iteracao + 1,
+                    "fitness": self.fitness(individuo),
+                    "makespan": self.makespan(individuo),
+                    "loadBalance": self.load_balance(individuo),
                 }
 
-            fitnessMedia = sum([self.fitness(individuo)
-                               for individuo in populacao]) / len(populacao)
+            fitnessMedia = sum(
+                [self.fitness(individuo) for individuo in populacao]
+            ) / len(populacao)
             mediasFitness.append(fitnessMedia)
             # print(f'\nMédia fitness da população: {fitnessMedia:.7f}')
 
-            fitnessMediaMakespan = sum([self.makespan(individuo)
-                                        for individuo in populacao]) / len(populacao)
+            fitnessMediaMakespan = sum(
+                [self.makespan(individuo) for individuo in populacao]
+            ) / len(populacao)
             mediasMakespan.append(fitnessMediaMakespan)
             # print(f'\nMédia makespan da população: {fitnessMediaMakespan:.7f}')
 
-            fitnessMediaLoadBalance = sum([self.load_balance(individuo)
-                                           for individuo in populacao]) / len(populacao)
+            fitnessMediaLoadBalance = sum(
+                [self.load_balance(individuo) for individuo in populacao]
+            ) / len(populacao)
             mediasLoadBalance.append(fitnessMediaLoadBalance)
             # print(f'\nMédia loadbalance da população: {fitnessMediaLoadBalance:.7f}')
 
-            individuo = min(
-                populacao, key=lambda individuo: self.fitness(individuo))
+            individuo = min(populacao, key=lambda individuo: self.fitness(individuo))
 
             melhorIndividuoDaPopulacao = {
-                'individuo': individuo,
-                'iteracao': iteracao + 1,
-                'fitness': self.fitness(individuo),
-                'makespan': self.makespan(individuo),
-                'loadBalance': self.load_balance(individuo)
+                "individuo": individuo,
+                "iteracao": iteracao + 1,
+                "fitness": self.fitness(individuo),
+                "makespan": self.makespan(individuo),
+                "loadBalance": self.load_balance(individuo),
             }
 
-            if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
+            if melhorIndividuoDaPopulacao["fitness"] < melhorIndividuo["fitness"]:
                 melhorIndividuo = melhorIndividuoDaPopulacao
 
             elite = self.elitismo(populacao, taxaElitismo)
@@ -303,16 +314,17 @@ class MSE:
 
                 if random() < chanceCrossoverAlocacao:
                     filhosAlocacao = self.spx_alocacao(
-                        pai1['alocacao'], pai2['alocacao'])
+                        pai1["alocacao"], pai2["alocacao"]
+                    )
                 else:
-                    filhosAlocacao = [pai1['alocacao'], pai2['alocacao']]
+                    filhosAlocacao = [pai1["alocacao"], pai2["alocacao"]]
 
                 if random() < chanceCrossoverEscalonamento:
                     filhosEscalonamento = self.spx_escalonamento(
-                        pai1['escalonamento'], pai2['escalonamento'])
+                        pai1["escalonamento"], pai2["escalonamento"]
+                    )
                 else:
-                    filhosEscalonamento = [
-                        pai1['escalonamento'], pai2['escalonamento']]
+                    filhosEscalonamento = [pai1["escalonamento"], pai2["escalonamento"]]
 
                 if random() < chanceMutacaoAlocacao:
                     filhosAlocacao[0] = self.pm(filhosAlocacao[0])
@@ -325,18 +337,20 @@ class MSE:
                     filhosEscalonamento[1] = self.stm(filhosEscalonamento[1])
 
                 filho1 = {
-                    'alocacao': filhosAlocacao[0],
-                    'escalonamento': filhosEscalonamento[0]
+                    "alocacao": filhosAlocacao[0],
+                    "escalonamento": filhosEscalonamento[0],
                 }
 
                 filho2 = {
-                    'alocacao': filhosAlocacao[1],
-                    'escalonamento': filhosEscalonamento[1]
+                    "alocacao": filhosAlocacao[1],
+                    "escalonamento": filhosEscalonamento[1],
                 }
 
                 if self.individuo_valido(filho1):
                     novaPopulacao.append(filho1)
-                if self.individuo_valido(filho2) and len(novaPopulacao) < tamanhoPopulacao - len(elite):
+                if self.individuo_valido(filho2) and len(
+                    novaPopulacao
+                ) < tamanhoPopulacao - len(elite):
                     novaPopulacao.append(filho2)
 
             # print(f'Iteração {iteracao + 1} concluída')
@@ -490,10 +504,9 @@ class MSE:
     def load_balance(self, individuo):
         tempoProcessadores = [0] * self.numeroProcessadores
 
-        for indice, tarefa in enumerate(individuo['escalonamento']):
-            processador = individuo['alocacao'][indice]
-            tempoExecucao = int(
-                self.dic[tarefa]['tempos_execucao'][processador])
+        for indice, tarefa in enumerate(individuo["escalonamento"]):
+            processador = individuo["alocacao"][indice]
+            tempoExecucao = int(self.dic[tarefa]["tempos_execucao"][processador])
 
             tempoProcessadores[processador] += tempoExecucao
 
@@ -508,28 +521,30 @@ class MSE:
     def makespan(self, cromossomo):
         tempoProcessamento = [0] * self.numeroProcessadores
 
-        for indice, tarefa in enumerate(cromossomo['escalonamento']):
-            processador = cromossomo['alocacao'][indice]
+        for indice, tarefa in enumerate(cromossomo["escalonamento"]):
+            processador = cromossomo["alocacao"][indice]
 
             tempoComunicacaoAcc = 0
 
-            predecessores = self.dic[tarefa]['predecessores']
+            predecessores = self.dic[tarefa]["predecessores"]
 
             if len(predecessores) > 0:
                 for i, predecessor in enumerate(predecessores):
-                    indicePredecessor = cromossomo['escalonamento'].index(
-                        predecessor)
-                    processadorPredecessor = cromossomo['alocacao'][indicePredecessor]
+                    indicePredecessor = cromossomo["escalonamento"].index(predecessor)
+                    processadorPredecessor = cromossomo["alocacao"][indicePredecessor]
 
                     if processadorPredecessor != processador:
                         tempoComunicacao = int(
-                            self.dic[tarefa]["custos_comunicacao"][i])
+                            self.dic[tarefa]["custos_comunicacao"][i]
+                        )
                         # print(f'Comunicacao entre {predecessor} e {tarefa} no processador {
                         #       processadorPredecessor} e {processador} = {tempoComunicacao}')
                         tempoComunicacaoAcc += tempoComunicacao
 
-            tempoProcessamento[processador] += int(self.dic[tarefa]['tempos_execucao'][processador]) + \
-                tempoComunicacaoAcc
+            tempoProcessamento[processador] += (
+                int(self.dic[tarefa]["tempos_execucao"][processador])
+                + tempoComunicacaoAcc
+            )
 
         return max(tempoProcessamento)
 

@@ -1,0 +1,23 @@
+[MESSAGES CONTROL]
+disable=
+    C0114,  # Missing module docstring
+    C0116,  # Missing function or method docstring
+    R0903,  # Too few public methods
+    C0103,  # Variable name doesn't conform to snake_case naming style
+    C0301,  # Line too long
+    W0311,  # Bad indentation
+    W0312,  # Mixed indentation
+    C0330,  # Wrong hanging indentation before block
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-args=10
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=10
+max-public-methods=20
