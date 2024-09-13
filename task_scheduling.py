@@ -25,7 +25,7 @@ class Task:
         self.avgCompCost = None
         self.predEdges = []
         self.succEdges = []
-        self.duration = {'start': None, 'end': None}
+        self.duration = {"start": None, "end": None}
 
     def __lt__(self, other):
         return False
@@ -77,7 +77,7 @@ class Environment:
             task.rank = None
             task.rankU = None
             task.rankD = None
-            task.duration = {'start': None, 'end': None}
+            task.duration = {"start": None, "end": None}
         for processor in self.processors:
             processor.taskList = []
 
@@ -104,7 +104,7 @@ class IPEFT:
         self.cn = []  # setar no array ou direto na task??
 
     def recursivePCT(self, task, processor):
-        if (task.id == self.exitTask.id):
+        if task.id == self.exitTask.id:
             self.pct[task.id][processor.id] = 0
             return 0
 
@@ -112,14 +112,19 @@ class IPEFT:
         for succEdge in task.succEdges:
             succTask = self.tasks[succEdge.successorTask]
             for nextProcessor in self.processors:
-                succPCT = (self.recursivePCT(succTask, nextProcessor) if self.pct[succTask.id][nextProcessor.id] == -1
-                           else self.pct[succTask.id][nextProcessor.id])
+                succPCT = (
+                    self.recursivePCT(succTask, nextProcessor)
+                    if self.pct[succTask.id][nextProcessor.id] == -1
+                    else self.pct[succTask.id][nextProcessor.id]
+                )
 
                 compCost = succTask.compCost[nextProcessor.id]
-                avgCommCost = succEdge.avgCommCost if processor.id != nextProcessor.id else 0
+                avgCommCost = (
+                    succEdge.avgCommCost if processor.id != nextProcessor.id else 0
+                )
                 pct = succPCT + compCost + avgCommCost
 
-                if (highestPCT < pct):
+                if highestPCT < pct:
                     highestPCT = pct
 
         self.pct[task.id][processor.id] = highestPCT
@@ -130,7 +135,7 @@ class IPEFT:
             self.recursivePCT(self.entryTask, processor)
 
     def recursiveCNCT(self, task, processor):
-        if (task.id == self.exitTask.id):
+        if task.id == self.exitTask.id:
             self.cnct[task.id][processor.id] = 0
             return 0
 
@@ -144,18 +149,22 @@ class IPEFT:
             validSuccEdges = task.succEdges
 
         for succEdge in validSuccEdges:
-            minCost = float('inf')
+            minCost = float("inf")
             succTask = self.tasks[succEdge.successorTask]
             for nextProcessor in self.processors:
-                succCNCT = (self.recursiveCNCT(succTask, nextProcessor)
-                            if self.cnct[succTask.id][nextProcessor.id] == -1
-                            else self.cnct[succTask.id][nextProcessor.id])
+                succCNCT = (
+                    self.recursiveCNCT(succTask, nextProcessor)
+                    if self.cnct[succTask.id][nextProcessor.id] == -1
+                    else self.cnct[succTask.id][nextProcessor.id]
+                )
 
                 compCost = succTask.compCost[nextProcessor.id]
                 # print(task.id, succTask.id, succCNCT, compCost, succEdge.avgCommCost)
-                avgCommCost = succEdge.avgCommCost if processor.id != nextProcessor.id else 0
+                avgCommCost = (
+                    succEdge.avgCommCost if processor.id != nextProcessor.id else 0
+                )
                 currentCost = succCNCT + compCost + avgCommCost
-                if (currentCost < minCost):
+                if currentCost < minCost:
                     minCost = currentCost
 
             if minCost > highestCNCT:
@@ -172,18 +181,21 @@ class IPEFT:
                     self.recursiveCNCT(task, processor)
 
     def recursiveAEST(self, task):
-        if (task.id == self.entryTask.id):
+        if task.id == self.entryTask.id:
             self.aest[task.id] = 0
             return 0
 
         highestAEST = -1
         for predEdge in task.predEdges:
             predTask = self.tasks[predEdge.predecessorTask]
-            predAEST = (self.recursiveAEST(predTask) if self.aest[predTask.id] == -1  # task???
-                        else self.aest[predTask.id])
+            predAEST = (
+                self.recursiveAEST(predTask)
+                if self.aest[predTask.id] == -1  # task???
+                else self.aest[predTask.id]
+            )
 
             aest = predAEST + predTask.avgCompCost + predEdge.avgCommCost
-            if (highestAEST < aest):
+            if highestAEST < aest:
                 highestAEST = aest
 
         self.aest[task.id] = highestAEST
@@ -193,18 +205,21 @@ class IPEFT:
         self.recursiveAEST(self.exitTask)
 
     def recursiveALST(self, task):
-        if (task.id == self.exitTask.id):
+        if task.id == self.exitTask.id:
             self.alst[task.id] = self.aest[task.id]
             return self.aest[task.id]
 
-        lowestALST = float('inf')
+        lowestALST = float("inf")
         for succEdge in task.succEdges:
             succTask = self.tasks[succEdge.successorTask]
-            succALST = (self.recursiveALST(succTask) if self.alst[succTask.id] == -1
-                        else self.alst[succTask.id])
+            succALST = (
+                self.recursiveALST(succTask)
+                if self.alst[succTask.id] == -1
+                else self.alst[succTask.id]
+            )
 
             alst = succALST - succEdge.avgCommCost
-            if (lowestALST > alst):
+            if lowestALST > alst:
                 lowestALST = alst
 
         self.alst[task.id] = lowestALST - task.avgCompCost
@@ -249,25 +264,31 @@ class IPEFT:
             predTask = self.tasks[predEdge.predecessorTask]
             if predTask.processorId != processor.id:
                 # Não esta sendo levado em consideração o communication statup cost
-                commCost = predEdge.data / \
-                    self.processorTransferRates[predTask.processorId][processor.id]
-            est = max(est, predTask.duration['end'] + commCost)
+                commCost = (
+                    predEdge.data
+                    / self.processorTransferRates[predTask.processorId][processor.id]
+                )
+            est = max(est, predTask.duration["end"] + commCost)
         freeTimes = []
         if lenTaskListProcessor == 0:
-            freeTimes.append([0, float('inf')])
+            freeTimes.append([0, float("inf")])
         else:
             for i in range(lenTaskListProcessor):
                 if i == 0:
                     # if processor is not busy from time 0
-                    if processor.taskList[i].duration['start'] != 0:
-                        freeTimes.append(
-                            [0, processor.taskList[i].duration['start']])
+                    if processor.taskList[i].duration["start"] != 0:
+                        freeTimes.append([0, processor.taskList[i].duration["start"]])
                 else:
                     freeTimes.append(
-                        [processor.taskList[i-1].duration['end'], processor.taskList[i].duration['start']])
-            freeTimes.append(
-                [processor.taskList[-1].duration['end'], float('inf')])
-        for slot in freeTimes:     # free_times is already sorted based on avaialbe start times
+                        [
+                            processor.taskList[i - 1].duration["end"],
+                            processor.taskList[i].duration["start"],
+                        ]
+                    )
+            freeTimes.append([processor.taskList[-1].duration["end"], float("inf")])
+        for (
+            slot
+        ) in freeTimes:  # free_times is already sorted based on avaialbe start times
             if est < slot[0] and slot[0] + task.compCost[processor.id] <= slot[1]:
                 return slot[0]
             if est >= slot[0] and est + task.compCost[processor.id] <= slot[1]:
@@ -281,7 +302,7 @@ class IPEFT:
             edge.avgCommCost = 0
 
     def calculateAvgCommCost(self):
-        if (self.numProcessors == 1):
+        if self.numProcessors == 1:
             return self.setEdgeWithoutAverage()
         avgProcTransfer = self.calculateAvgTransferRates()
         avgCommStartup = np.average(self.commStartupCosts)
@@ -314,19 +335,19 @@ class IPEFT:
                 else:
                     eftCNCT = eft + self.cnct[task.id][processor.id]
 
-                if (eftCNCT < eftCNCTBest):
+                if eftCNCT < eftCNCTBest:
                     estBest = est
                     aft = eft
                     eftCNCTBest = eftCNCT
                     bestProcessor = processor
             # print("Task: ", task.id, ", Selected proc: ", bestProcessor.id, " CNP:", task.cnp)
-            task.duration['start'] = estBest
-            task.duration['end'] = aft
+            task.duration["start"] = estBest
+            task.duration["end"] = aft
             task.processorId = bestProcessor.id
 
             bestProcessor.taskList.append(task)
             # precisa ordenar todo loop??
-            bestProcessor.taskList.sort(key=lambda x: x.duration['start'])
+            bestProcessor.taskList.sort(key=lambda x: x.duration["start"])
 
     def run(self, verbose=False):
         self.calculateAvgCompCost()
@@ -338,7 +359,7 @@ class IPEFT:
         self.calculateCNCT()
         self.calculatePCT()
         self.calculateRankPCT()
-        if (verbose):
+        if verbose:
             for task in self.tasks:
                 # print("Tasks Id: ", task.id, " -> AEST: ", self.aest[task.id])
                 # print("Tasks Id: ", task.id, " -> ALST: ", self.alst[task.id])
@@ -347,31 +368,44 @@ class IPEFT:
                 # print("Tasks Id: ", task.id, " -> Rank PCT: ", task.rankPCT)
                 for processor in self.processors:
                     break
-                    print("Tasks Id: ", task.id, " Processor Id: ", processor.id,
-                          " -> CNCT: ", self.cnct[task.id][processor.id])
-                    print("Tasks Id: ", task.id, " Processor Id: ",
-                          processor.id, " -> PCT: ", self.pct[task.id][processor.id])
+                    print(
+                        "Tasks Id: ",
+                        task.id,
+                        " Processor Id: ",
+                        processor.id,
+                        " -> CNCT: ",
+                        self.cnct[task.id][processor.id],
+                    )
+                    print(
+                        "Tasks Id: ",
+                        task.id,
+                        " Processor Id: ",
+                        processor.id,
+                        " -> PCT: ",
+                        self.pct[task.id][processor.id],
+                    )
         self.scheduleTasks()
-        scheduleLength = self.exitTask.duration['end']
+        scheduleLength = self.exitTask.duration["end"]
         # print('Schedule length = ', scheduleLength)
         return scheduleLength
 
     # Metrics
     def makespan(self):
-        return self.exitTask.duration['end']
+        return self.exitTask.duration["end"]
 
     def loadBalance(self):
         processingTotal = 0
         for processor in self.processors:
             processor.processingTime = 0
             for task in processor.taskList:
-                processor.processingTime += task.duration['end'] - \
-                    task.duration['start']
+                processor.processingTime += (
+                    task.duration["end"] - task.duration["start"]
+                )
 
             processingTotal += processor.processingTime
 
         processingAvg = processingTotal / self.numProcessors
-        return self.exitTask.duration['end'] / processingAvg
+        return self.exitTask.duration["end"] / processingAvg
 
 
 class IHEFT:
@@ -392,8 +426,7 @@ class IHEFT:
             highestCost = max(task.compCost)
             lowestCost = min(task.compCost)
             if highestCost != 0:
-                task.weight = (highestCost - lowestCost) / \
-                    (highestCost / lowestCost)
+                task.weight = (highestCost - lowestCost) / (highestCost / lowestCost)
             else:
                 task.weight = 0
 
@@ -417,25 +450,31 @@ class IHEFT:
             predTask = self.tasks[predEdge.predecessorTask]  # error
             if predTask.processorId != processor.id:
                 # Não esta sendo levado em consideração o communication statup cost
-                commCost = predEdge.data / \
-                    self.processorTransferRates[predTask.processorId][processor.id]
-            est = max(est, predTask.duration['end'] + commCost)
+                commCost = (
+                    predEdge.data
+                    / self.processorTransferRates[predTask.processorId][processor.id]
+                )
+            est = max(est, predTask.duration["end"] + commCost)
         freeTimes = []
-        if lenTaskListProcessor == 0:       # no task has yet been assigned to processor
-            freeTimes.append([0, float('inf')])
+        if lenTaskListProcessor == 0:  # no task has yet been assigned to processor
+            freeTimes.append([0, float("inf")])
         else:
             for i in range(lenTaskListProcessor):
                 if i == 0:
                     # if processor is not busy from time 0
-                    if processor.taskList[i].duration['start'] != 0:
-                        freeTimes.append(
-                            [0, processor.taskList[i].duration['start']])
+                    if processor.taskList[i].duration["start"] != 0:
+                        freeTimes.append([0, processor.taskList[i].duration["start"]])
                 else:
                     freeTimes.append(
-                        [processor.taskList[i-1].duration['end'], processor.taskList[i].duration['start']])
-            freeTimes.append(
-                [processor.taskList[-1].duration['end'], float('inf')])
-        for slot in freeTimes:     # free_times is already sorted based on avaialbe start times
+                        [
+                            processor.taskList[i - 1].duration["end"],
+                            processor.taskList[i].duration["start"],
+                        ]
+                    )
+            freeTimes.append([processor.taskList[-1].duration["end"], float("inf")])
+        for (
+            slot
+        ) in freeTimes:  # free_times is already sorted based on avaialbe start times
             if est < slot[0] and slot[0] + task.compCost[processor.id] <= slot[1]:
                 return slot[0]
             if est >= slot[0] and est + task.compCost[processor.id] <= slot[1]:
@@ -449,7 +488,7 @@ class IHEFT:
             edge.avgCommCost = 0
 
     def calculateAvgCommCost(self):
-        if (self.numProcessors == 1):
+        if self.numProcessors == 1:
             return self.setEdgeWithoutAverage()
         avgProcTransfer = self.calculateAvgTransferRates()
         avgCommStartup = np.average(self.commStartupCosts)
@@ -465,12 +504,14 @@ class IHEFT:
 
         successorsMaxList = []
         for edge in task.succEdges:
-            succRankUpward = self.recursiveRankUpward(
-                self.tasks[edge.successorTask])
+            succRankUpward = self.recursiveRankUpward(self.tasks[edge.successorTask])
             successorsMaxList.append(edge.avgCommCost + succRankUpward)
 
-        currentRankUpward = (task.weight if len(successorsMaxList) == 0
-                             else task.weight + np.amax(successorsMaxList))
+        currentRankUpward = (
+            task.weight
+            if len(successorsMaxList) == 0
+            else task.weight + np.amax(successorsMaxList)
+        )
 
         task.rank = currentRankUpward
         return currentRankUpward
@@ -490,10 +531,11 @@ class IHEFT:
     def scheduleTasks(self):
         firstTask = self.rankUTasks[0]
         processorId, compCost = min(
-            enumerate(firstTask.compCost), key=operator.itemgetter(1))
+            enumerate(firstTask.compCost), key=operator.itemgetter(1)
+        )
         # print("Task: ", firstTask.id, ", Proc: ", processorId, " -> EST: ", 0, 'EFT', compCost)
-        firstTask.duration['start'] = 0
-        firstTask.duration['end'] = compCost
+        firstTask.duration["start"] = 0
+        firstTask.duration["end"] = compCost
         firstTask.processorId = processorId
         self.processors[processorId].taskList.append(firstTask)
 
@@ -505,82 +547,82 @@ class IHEFT:
                 est = self.getEST(task, processor)
                 eft = self.getEFT(task, processor, est)
                 # print("Task: ", task.id, ", Proc: ", processor.id, " -> EST: ", est, 'EFT', eft)
-                if (eft < eftBest):
+                if eft < eftBest:
                     estBest = est
                     eftBest = eft
                     bestProcessor = processor
 
             minLocalProcId, minLocalCompCost = min(
-                enumerate(task.compCost), key=operator.itemgetter(1))
+                enumerate(task.compCost), key=operator.itemgetter(1)
+            )
             minGlobalCompCost = task.compCost[bestProcessor.id]
             if minGlobalCompCost <= minLocalCompCost:
-                task.duration['start'] = estBest
-                task.duration['end'] = eftBest
+                task.duration["start"] = estBest
+                task.duration["end"] = eftBest
                 task.processorId = bestProcessor.id
 
                 bestProcessor.taskList.append(task)
                 # precisa ordenar todo loop??
-                bestProcessor.taskList.sort(key=lambda x: x.duration['start'])
+                bestProcessor.taskList.sort(key=lambda x: x.duration["start"])
             else:
                 minLocalProc = self.processors[minLocalProcId]
                 estMinLocal = self.getEST(task, minLocalProc)
                 eftMinLocal = estMinLocal + minLocalCompCost
                 crossThreshold = self.calculateCrossThreshold(
-                    task.weight, eftMinLocal, eftBest)
+                    task.weight, eftMinLocal, eftBest
+                )
                 # r = uniform(0.1, 0.3) TODO retornar essa linha
                 r = 0.3
                 # print('cross', crossThreshold, task.id)
                 if crossThreshold <= r:
-                    task.duration['start'] = estBest
-                    task.duration['end'] = eftBest
+                    task.duration["start"] = estBest
+                    task.duration["end"] = eftBest
                     task.processorId = bestProcessor.id
 
                     bestProcessor.taskList.append(task)
-                    bestProcessor.taskList.sort(
-                        key=lambda x: x.duration['start'])
+                    bestProcessor.taskList.sort(key=lambda x: x.duration["start"])
                 else:
-                    task.duration['start'] = estMinLocal
-                    task.duration['end'] = eftMinLocal
+                    task.duration["start"] = estMinLocal
+                    task.duration["end"] = eftMinLocal
                     task.processorId = minLocalProcId
 
                     minLocalProc.taskList.append(task)
-                    minLocalProc.taskList.sort(
-                        key=lambda x: x.duration['start'])
+                    minLocalProc.taskList.sort(key=lambda x: x.duration["start"])
 
     def run(self, verbose=False):
         self.calculateTaskWeight()
         self.calculateAvgCommCost()
         self.calculateRankUpward()
-        if (verbose):
+        if verbose:
             for task in self.rankUTasks:
                 break
                 print("Tasks Id: ", task.id, "-> Rank Upward: ", task.rank)
         self.scheduleTasks()
-        if (verbose):
+        if verbose:
             for task in self.rankUTasks:
                 break
-                print("Tasks Id: ", task.id,
-                      "-> Processor Id: ", task.processorId)
-        scheduleLength = self.exitTask.duration['end']
+                print("Tasks Id: ", task.id, "-> Processor Id: ", task.processorId)
+        scheduleLength = self.exitTask.duration["end"]
         # print('Schedule length = ', scheduleLength)
         return scheduleLength
 
     # Metrics
     def makespan(self):
-        return self.exitTask.duration['end']
+        return self.exitTask.duration["end"]
 
     def loadBalance(self):
         processingTotal = 0
         for processor in self.processors:
             processor.processingTime = 0
             for task in processor.taskList:
-                processor.processingTime += task.duration['end'] - \
-                    task.duration['start']
+                processor.processingTime += (
+                    task.duration["end"] - task.duration["start"]
+                )
 
             processingTotal += processor.processingTime
 
         processingAvg = processingTotal / self.numProcessors
-        return self.exitTask.duration['end'] / processingAvg
+        return self.exitTask.duration["end"] / processingAvg
 
 
 class CPOP:
@@ -624,25 +666,31 @@ class CPOP:
             predTask = self.tasks[predEdge.predecessorTask]  # error
             if predTask.processorId != processor.id:
                 # Não esta sendo levado em consideração o communication statup cost
-                commCost = predEdge.data / \
-                    self.processorTransferRates[predTask.processorId][processor.id]
-            est = max(est, predTask.duration['end'] + commCost)
+                commCost = (
+                    predEdge.data
+                    / self.processorTransferRates[predTask.processorId][processor.id]
+                )
+            est = max(est, predTask.duration["end"] + commCost)
         freeTimes = []
-        if lenTaskListProcessor == 0:       # no task has yet been assigned to processor
-            freeTimes.append([0, float('inf')])
+        if lenTaskListProcessor == 0:  # no task has yet been assigned to processor
+            freeTimes.append([0, float("inf")])
         else:
             for i in range(lenTaskListProcessor):
                 if i == 0:
                     # if processor is not busy from time 0
-                    if processor.taskList[i].duration['start'] != 0:
-                        freeTimes.append(
-                            [0, processor.taskList[i].duration['start']])
+                    if processor.taskList[i].duration["start"] != 0:
+                        freeTimes.append([0, processor.taskList[i].duration["start"]])
                 else:
                     freeTimes.append(
-                        [processor.taskList[i-1].duration['end'], processor.taskList[i].duration['start']])
-            freeTimes.append(
-                [processor.taskList[-1].duration['end'], float('inf')])
-        for slot in freeTimes:     # free_times is already sorted based on avaialbe start times
+                        [
+                            processor.taskList[i - 1].duration["end"],
+                            processor.taskList[i].duration["start"],
+                        ]
+                    )
+            freeTimes.append([processor.taskList[-1].duration["end"], float("inf")])
+        for (
+            slot
+        ) in freeTimes:  # free_times is already sorted based on avaialbe start times
             if est < slot[0] and slot[0] + task.compCost[processor.id] <= slot[1]:
                 return slot[0]
             if est >= slot[0] and est + task.compCost[processor.id] <= slot[1]:
@@ -656,7 +704,7 @@ class CPOP:
             edge.avgCommCost = 0
 
     def calculateAvgCommCost(self):
-        if (self.numProcessors == 1):
+        if self.numProcessors == 1:
             return self.setEdgeWithoutAverage()
         avgProcTransfer = self.calculateAvgTransferRates()
         avgCommStartup = np.average(self.commStartupCosts)
@@ -673,12 +721,14 @@ class CPOP:
 
         successorsMaxList = []
         for edge in task.succEdges:
-            succRankUpward = self.recursiveRankUpward(
-                self.tasks[edge.successorTask])
+            succRankUpward = self.recursiveRankUpward(self.tasks[edge.successorTask])
             successorsMaxList.append(edge.avgCommCost + succRankUpward)
 
-        currentRankUpward = (task.avgCompCost if len(successorsMaxList) == 0
-                             else task.avgCompCost + np.amax(successorsMaxList))
+        currentRankUpward = (
+            task.avgCompCost
+            if len(successorsMaxList) == 0
+            else task.avgCompCost + np.amax(successorsMaxList)
+        )
 
         task.rankU = currentRankUpward
         return currentRankUpward
@@ -690,12 +740,11 @@ class CPOP:
         predMaxList = []
         for edge in task.predEdges:
             predRankDownward = self.recursiveRankDownward(
-                self.tasks[edge.predecessorTask])
-            predMaxList.append(task.avgCompCost +
-                               edge.avgCommCost + predRankDownward)
+                self.tasks[edge.predecessorTask]
+            )
+            predMaxList.append(task.avgCompCost + edge.avgCommCost + predRankDownward)
 
-        currentRankDownward = 0 if len(
-            predMaxList) == 0 else np.amax(predMaxList)
+        currentRankDownward = 0 if len(predMaxList) == 0 else np.amax(predMaxList)
 
         task.rankD = currentRankDownward
         return currentRankDownward
@@ -741,8 +790,7 @@ class CPOP:
 
     def scheduleTasks(self):
         priorityQueue = []
-        heapq.heappush(
-            priorityQueue, (-1 * self.entryTask.rank, self.entryTask))
+        heapq.heappush(priorityQueue, (-1 * self.entryTask.rank, self.entryTask))
 
         while len(priorityQueue) != 0:
             task = heapq.heappop(priorityQueue)[1]
@@ -753,25 +801,25 @@ class CPOP:
                 est = self.getEST(task, bestProcessor)
                 eft = self.getEFT(task, bestProcessor, est)
                 # print("Task: ", task.id, ", ProcCP: ", bestProcessor.id, " -> EST: ", est, 'EFT', eft)
-                task.duration['start'] = est
-                task.duration['end'] = eft
+                task.duration["start"] = est
+                task.duration["end"] = eft
             else:
                 eftBest = float("inf")
                 for processor in self.processors:
                     est = self.getEST(task, processor)
                     eft = self.getEFT(task, processor, est)
                     # print("Task: ", task.id, ", Proc: ", processor.id, " -> EST: ", est, 'EFT', eft)
-                    if (eft < eftBest):
+                    if eft < eftBest:
                         estBest = est
                         eftBest = eft
                         bestProcessor = processor
-                task.duration['start'] = estBest
-                task.duration['end'] = eftBest
+                task.duration["start"] = estBest
+                task.duration["end"] = eftBest
 
             task.processorId = bestProcessor.id
             bestProcessor.taskList.append(task)
             # precisa ordenar todo loop??
-            bestProcessor.taskList.sort(key=lambda x: x.duration['start'])
+            bestProcessor.taskList.sort(key=lambda x: x.duration["start"])
 
             # Tem jeito mais facil de verificar se está pronta a task??
             for succEdge in task.succEdges:
@@ -782,8 +830,7 @@ class CPOP:
                         isReady = False
 
                 if isReady:
-                    heapq.heappush(
-                        priorityQueue, (-1 * succTask.rank, succTask))
+                    heapq.heappush(priorityQueue, (-1 * succTask.rank, succTask))
 
     def run(self):
         self.calculateAvgCompCost()
@@ -799,26 +846,27 @@ class CPOP:
         #   print("Critical Task ", task.id)
         # print("Processor CP", self.processorCP.id)
         self.scheduleTasks()
-        scheduleLength = self.exitTask.duration['end']
+        scheduleLength = self.exitTask.duration["end"]
         # print('Schedule length = ', scheduleLength)
         return scheduleLength
 
     # Metrics
     def makespan(self):
-        return self.exitTask.duration['end']
+        return self.exitTask.duration["end"]
 
     def loadBalance(self):
         processingTotal = 0
         for processor in self.processors:
             processor.processingTime = 0
             for task in processor.taskList:
-                processor.processingTime += task.duration['end'] - \
-                    task.duration['start']
+                processor.processingTime += (
+                    task.duration["end"] - task.duration["start"]
+                )
 
             processingTotal += processor.processingTime
 
         processingAvg = processingTotal / self.numProcessors
-        return self.exitTask.duration['end'] / processingAvg
+        return self.exitTask.duration["end"] / processingAvg
 
 
 class HEFT:
@@ -829,7 +877,9 @@ class HEFT:
         self.tasks = env.tasks[:]
         self.edges = env.edges[:]
         self.processors = env.processors[:]
-        self.processorTransferRates = env.processorTransferRates  # Barramento heterogêneo?
+        self.processorTransferRates = (
+            env.processorTransferRates
+        )  # Barramento heterogêneo?
         self.commStartupCosts = env.commStartupCosts  # Precisa??
         self.entryTask = self.tasks[0]
         self.exitTask = self.tasks[self.numTasks - 1]
@@ -861,25 +911,31 @@ class HEFT:
             predTask = self.tasks[predEdge.predecessorTask]  # error
             if predTask.processorId != processor.id:
                 # Não esta sendo levado em consideração o communication statup cost
-                commCost = predEdge.data / \
-                    self.processorTransferRates[predTask.processorId][processor.id]
-            est = max(est, predTask.duration['end'] + commCost)
+                commCost = (
+                    predEdge.data
+                    / self.processorTransferRates[predTask.processorId][processor.id]
+                )
+            est = max(est, predTask.duration["end"] + commCost)
         freeTimes = []
-        if lenTaskListProcessor == 0:       # no task has yet been assigned to processor
-            freeTimes.append([0, float('inf')])
+        if lenTaskListProcessor == 0:  # no task has yet been assigned to processor
+            freeTimes.append([0, float("inf")])
         else:
             for i in range(lenTaskListProcessor):
                 if i == 0:
                     # if processor is not busy from time 0
-                    if processor.taskList[i].duration['start'] != 0:
-                        freeTimes.append(
-                            [0, processor.taskList[i].duration['start']])
+                    if processor.taskList[i].duration["start"] != 0:
+                        freeTimes.append([0, processor.taskList[i].duration["start"]])
                 else:
                     freeTimes.append(
-                        [processor.taskList[i-1].duration['end'], processor.taskList[i].duration['start']])
-            freeTimes.append(
-                [processor.taskList[-1].duration['end'], float('inf')])
-        for slot in freeTimes:     # free_times is already sorted based on avaialbe start times
+                        [
+                            processor.taskList[i - 1].duration["end"],
+                            processor.taskList[i].duration["start"],
+                        ]
+                    )
+            freeTimes.append([processor.taskList[-1].duration["end"], float("inf")])
+        for (
+            slot
+        ) in freeTimes:  # free_times is already sorted based on avaialbe start times
             if est < slot[0] and slot[0] + task.compCost[processor.id] <= slot[1]:
                 return slot[0]
             if est >= slot[0] and est + task.compCost[processor.id] <= slot[1]:
@@ -893,7 +949,7 @@ class HEFT:
             edge.avgCommCost = 0
 
     def calculateAvgCommCost(self):
-        if (self.numProcessors == 1):
+        if self.numProcessors == 1:
             return self.setEdgeWithoutAverage()
         avgProcTransfer = self.calculateAvgTransferRates()
         avgCommStartup = np.average(self.commStartupCosts)
@@ -910,14 +966,16 @@ class HEFT:
 
         successorsMaxList = []
         for edge in task.succEdges:
-            succRankUpward = self.recursiveRankUpward(
-                self.tasks[edge.successorTask])
+            succRankUpward = self.recursiveRankUpward(self.tasks[edge.successorTask])
             # print(task.id, edge.avgCommCost, succRankUpward)
             # TODO verificar qual é o maior aqui, para não fazer np.max
             successorsMaxList.append(edge.avgCommCost + succRankUpward)
 
-        currentRankUpward = (task.avgCompCost if len(successorsMaxList) == 0
-                             else task.avgCompCost + np.amax(successorsMaxList))
+        currentRankUpward = (
+            task.avgCompCost
+            if len(successorsMaxList) == 0
+            else task.avgCompCost + np.amax(successorsMaxList)
+        )
 
         task.rank = currentRankUpward
         return currentRankUpward
@@ -931,10 +989,11 @@ class HEFT:
     def scheduleTasks(self):
         firstTask = self.rankUTasks[0]
         processorId, compCost = min(
-            enumerate(firstTask.compCost), key=operator.itemgetter(1))
+            enumerate(firstTask.compCost), key=operator.itemgetter(1)
+        )
         # print("Task: ", firstTask.id, ", Proc: ", processorId, " -> EST: ", 0, 'EFT', compCost)
-        firstTask.duration['start'] = 0
-        firstTask.duration['end'] = compCost
+        firstTask.duration["start"] = 0
+        firstTask.duration["end"] = compCost
         firstTask.processorId = processorId
         self.processors[processorId].taskList.append(firstTask)
 
@@ -945,34 +1004,34 @@ class HEFT:
                 est = self.getEST(task, processor)
                 eft = self.getEFT(task, processor, est)
                 # print("Task: ", task.id, ", Proc: ", processor.id, " -> EST: ", est, 'EFT', eft)
-                if (eft < eftBest):
+                if eft < eftBest:
                     estBest = est
                     eftBest = eft
                     bestProcessor = processor
-            task.duration['start'] = estBest
-            task.duration['end'] = eftBest
+            task.duration["start"] = estBest
+            task.duration["end"] = eftBest
             task.processorId = bestProcessor.id
 
             bestProcessor.taskList.append(task)
             # precisa ordenar todo loop??
-            bestProcessor.taskList.sort(key=lambda x: x.duration['start'])
+            bestProcessor.taskList.sort(key=lambda x: x.duration["start"])
 
     def run(self, verbose=False):
         self.calculateAvgCompCost()
         self.calculateAvgCommCost()
         self.calculateRankUpward()
-        if (verbose):
+        if verbose:
             for task in self.rankUTasks:
                 break
                 print("Tasks Id: ", task.id, "-> Rank Upward: ", task.rank)
         self.scheduleTasks()
-        scheduleLength = self.exitTask.duration['end']
+        scheduleLength = self.exitTask.duration["end"]
         # print('Schedule length = ', scheduleLength)
         return scheduleLength
 
     # Metrics
     def makespan(self):
-        return self.exitTask.duration['end']
+        return self.exitTask.duration["end"]
 
     # def scheduleLengthRatio(self):
     #   minCPIC =
@@ -995,13 +1054,14 @@ class HEFT:
         for processor in self.processors:
             processor.processingTime = 0
             for task in processor.taskList:
-                processor.processingTime += task.duration['end'] - \
-                    task.duration['start']
+                processor.processingTime += (
+                    task.duration["end"] - task.duration["start"]
+                )
 
             processingTotal += processor.processingTime
 
         processingAvg = processingTotal / self.numProcessors
-        return self.exitTask.duration['end'] / processingAvg
+        return self.exitTask.duration["end"] / processingAvg
 
 
 class DAG:
@@ -1013,7 +1073,7 @@ class DAG:
         self.wf.write(colContent)
 
     def readFormatCol(self, line, indexCol):
-        dataCol = line[self.colSize*indexCol: self.colSize*(indexCol+1)]
+        dataCol = line[self.colSize * indexCol : self.colSize * (indexCol + 1)]
         return int(dataCol.strip())
 
     def isEntryOrExitTask(self, taskId, numTask):
@@ -1028,9 +1088,16 @@ class DAG:
     # CCHP STG Columns
     # Task Id | [ Computation Cost list ](length = numProc) | Num Predecessors | [ (Predecessors Id | Communication data) list ]
 
-    def createCCHP(self, readDirfile, writeDirfile, numProcessors, compCostVariation=3, commDataVariation=5):
-        self.rf = open(readDirfile, 'r')
-        self.wf = open(writeDirfile, 'w')
+    def createCCHP(
+        self,
+        readDirfile,
+        writeDirfile,
+        numProcessors,
+        compCostVariation=3,
+        commDataVariation=5,
+    ):
+        self.rf = open(readDirfile, "r")
+        self.wf = open(writeDirfile, "w")
         colSize = 11
 
         numTasks = int(self.rf.readline().strip())
@@ -1038,7 +1105,7 @@ class DAG:
         self.writeFormatCol(numProcessors)
         self.wf.write("\n")
 
-        for _ in range(numTasks+2):  # +2 por causa da entry task e a exit task
+        for _ in range(numTasks + 2):  # +2 por causa da entry task e a exit task
             line = self.rf.readline()
 
             taskId = self.readFormatCol(line, 0)
@@ -1048,19 +1115,26 @@ class DAG:
             self.writeFormatCol(taskId)
             for _ in range(numProcessors):
                 maxRange = baseCompCost + compCostVariation + 1
-                compCostProcessor = (randrange(baseCompCost, maxRange)
-                                     if not self.isEntryOrExitTask(taskId, numTasks)
-                                     else 0)
+                compCostProcessor = (
+                    randrange(baseCompCost, maxRange)
+                    if not self.isEntryOrExitTask(taskId, numTasks)
+                    else 0
+                )
 
                 self.writeFormatCol(compCostProcessor)
 
             self.writeFormatCol(numPred)
             for i in range(numPred):
-                predTaskId = self.readFormatCol(line, i+3)
+                predTaskId = self.readFormatCol(line, i + 3)
 
-                commData = (randrange(1, commDataVariation + 1)
-                            if not (self.isEntryOrExitTask(taskId, numTasks) or self.isEntryOrExitTask(predTaskId, numTasks))
-                            else 0)
+                commData = (
+                    randrange(1, commDataVariation + 1)
+                    if not (
+                        self.isEntryOrExitTask(taskId, numTasks)
+                        or self.isEntryOrExitTask(predTaskId, numTasks)
+                    )
+                    else 0
+                )
 
                 self.writeFormatCol(predTaskId)
                 self.writeFormatCol(commData)
@@ -1073,9 +1147,9 @@ class DAG:
     def readCCHP(self, readDirfile):
 
         try:
-            self.rf = open(readDirfile, 'r')
+            self.rf = open(readDirfile, "r")
         except:
-            print('Erro ao abrir arquivo')
+            print("Erro ao abrir arquivo")
             return None
 
         line = self.rf.readline()
@@ -1085,7 +1159,7 @@ class DAG:
         # Contando a entry e a exit task
         env = Environment(numTasks + 2, numProcessors)
 
-        for _ in range(numTasks+2):  # +2 por causa da entry task e a exit task
+        for _ in range(numTasks + 2):  # +2 por causa da entry task e a exit task
             colIndex = 0
             line = self.rf.readline()
             taskId = self.readFormatCol(line, colIndex)
@@ -1118,6 +1192,7 @@ class DAG:
 
         return env
 
+
 # dag = DAG()
 # dag.createCCHP('/content/drive/MyDrive/TCC/rnc50/50/rand0000 (edited).stg', '/content/drive/MyDrive/TCC/rnc50/50/rand0000 (new).stg', 2)
 # env = dag.readCCHP('grafos_breno/stg-cchp/50/rand0060-2-2-5.stg')
@@ -1146,7 +1221,7 @@ class DAG:
 class Test:
     def __init__(self):
         self.num = 1
-        self.st = 'a'
+        self.st = "a"
 
 
 class MetricsResult:
@@ -1158,7 +1233,16 @@ class MetricsResult:
 
 
 class Experiment:
-    def __init__(self, listaProcessadores, variacaoTempoExecucaoLista, variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, grafosReais=False, grafo_real=None):
+    def __init__(
+        self,
+        listaProcessadores,
+        variacaoTempoExecucaoLista,
+        variacaoCustoComunicacaoLista,
+        numTarefasLista,
+        diretorioBase,
+        grafosReais=False,
+        grafo_real=None,
+    ):
         self.dag = DAG()
         self.numProcessors = listaProcessadores
         self.compCostVariations = variacaoTempoExecucaoLista
@@ -1184,24 +1268,32 @@ class Experiment:
                 for numProcessor in self.numProcessors:
                     for compCostVariation in self.compCostVariations:
                         for commDataVariation in self.commDataVariations:
-                            graphIndex = str(i).rjust(3, '0')
-                            graphDiretory = self.baseDiretory + \
-                                f'stg/{numTask}/rand0{graphIndex}.stg'
-                            graphCCHPDiretory = self.baseDiretory + \
-                                f'stg-cchp/{numTask}/rand0{graphIndex}-{numProcessor}-{
-                                    compCostVariation}-{commDataVariation}.stg'
+                            graphIndex = str(i).rjust(3, "0")
+                            graphDiretory = (
+                                self.baseDiretory
+                                + f"stg/{numTask}/rand0{graphIndex}.stg"
+                            )
+                            graphCCHPDiretory = (
+                                self.baseDiretory
+                                + f"stg-cchp/{numTask}/rand0{graphIndex}-{numProcessor}-{compCostVariation}-{commDataVariation}.stg"
+                            )
                             self.dag.createCCHP(
-                                graphDiretory, graphCCHPDiretory, numProcessor, compCostVariation, commDataVariation)
+                                graphDiretory,
+                                graphCCHPDiretory,
+                                numProcessor,
+                                compCostVariation,
+                                commDataVariation,
+                            )
 
     def saveResults(self, fileName, results):
-        resultsDiretory = self.baseDiretory + f'results/{fileName}'
-        file = open(resultsDiretory, 'wb')
+        resultsDiretory = self.baseDiretory + f"results/{fileName}"
+        file = open(resultsDiretory, "wb")
         pickle.dump(results, file)
         file.close()
 
     def loadResults(self, fileName):
-        resultsDiretory = self.baseDiretory + f'results/{fileName}'
-        file = open(resultsDiretory, 'rb')
+        resultsDiretory = self.baseDiretory + f"results/{fileName}"
+        file = open(resultsDiretory, "rb")
         return pickle.load(file)
 
     def runSchedules(self, passo=5):
@@ -1220,17 +1312,17 @@ class Experiment:
 
                             if self.grafosReais is not True:
 
-                                graphIndex = str(i).rjust(3, '0')
-                                graphCCHPDiretory = self.baseDiretory + \
-                                    f'{numTask}/rand0{graphIndex}-{numProcessor}-{
-                                        compCostVariation}-{commDataVariation}.stg'
+                                graphIndex = str(i).rjust(3, "0")
+                                graphCCHPDiretory = (
+                                    self.baseDiretory
+                                    + f"{numTask}/rand0{graphIndex}-{numProcessor}-{compCostVariation}-{commDataVariation}.stg"
+                                )
                                 env = self.dag.readCCHP(graphCCHPDiretory)
 
                                 if env is None:
                                     break
 
-                                nomeGrafo = f'rand0{
-                                    graphIndex}-{numProcessor}-{compCostVariation}-{commDataVariation}.stg'
+                                nomeGrafo = f"rand0{graphIndex}-{numProcessor}-{compCostVariation}-{commDataVariation}.stg"
 
                             else:
                                 env = self.dag.readCCHP(self.grafo_real)
@@ -1240,7 +1332,11 @@ class Experiment:
                             # print(graphCCHPDiretory)
 
                             metricsResult = MetricsResult(
-                                numTask, numProcessor, compCostVariation, commDataVariation)
+                                numTask,
+                                numProcessor,
+                                compCostVariation,
+                                commDataVariation,
+                            )
 
                             ipeft = IPEFT(env)
                             ipeft.run()
@@ -1281,15 +1377,15 @@ class Experiment:
         width = 0.10  # the width of the bars
 
         fig, ax = plt.subplots()
-        rects1 = ax.bar(x - 1.5 * width, ipeftValues, width, label='IPEFT')
-        rects2 = ax.bar(x - width/2, iheftValues, width, label='IHEFT')
-        rects1 = ax.bar(x + width/2, ipeftValues, width, label='CPOP')
-        rects2 = ax.bar(x + 1.5 * width, iheftValues, width, label='HEFT')
+        rects1 = ax.bar(x - 1.5 * width, ipeftValues, width, label="IPEFT")
+        rects2 = ax.bar(x - width / 2, iheftValues, width, label="IHEFT")
+        rects1 = ax.bar(x + width / 2, ipeftValues, width, label="CPOP")
+        rects2 = ax.bar(x + 1.5 * width, iheftValues, width, label="HEFT")
 
         # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Makespan')
-        ax.set_xlabel('Number of Processors')
-        ax.set_title('50 Tasks')
+        ax.set_ylabel("Makespan")
+        ax.set_xlabel("Number of Processors")
+        ax.set_title("50 Tasks")
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
         ax.legend(bbox_to_anchor=(1, 1))
@@ -1317,16 +1413,16 @@ def functionalTest():
     # dag.createCCHP('grafos_breno/rnc50/50/rand0003.stg', 'grafos_breno/rnc50/50/FT0003-p1-cchp.stg', 1)
 
     graphFiles = [
-        'topcuoglu-10.stg',
-        'alebrahim-10.stg',
-        'zhou-10.stg',
-        'functional-tests/FT0000-p2-cchp.stg',
-        'functional-tests/FT0000-p4-cchp.stg',
-        'functional-tests/FT0001-p3-cchp.stg',
-        'functional-tests/FT0001-p5-cchp.stg',
-        'functional-tests/FT0002-p2-cchp.stg',  # Pq o CPOP foi melhor?
-        'functional-tests/FT0002-p4-cchp.stg',  # Resultado do CPOP estranho
-        'functional-tests/FT0003-p1-cchp.stg',
+        "topcuoglu-10.stg",
+        "alebrahim-10.stg",
+        "zhou-10.stg",
+        "functional-tests/FT0000-p2-cchp.stg",
+        "functional-tests/FT0000-p4-cchp.stg",
+        "functional-tests/FT0001-p3-cchp.stg",
+        "functional-tests/FT0001-p5-cchp.stg",
+        "functional-tests/FT0002-p2-cchp.stg",  # Pq o CPOP foi melhor?
+        "functional-tests/FT0002-p4-cchp.stg",  # Resultado do CPOP estranho
+        "functional-tests/FT0003-p1-cchp.stg",
     ]
 
     expectedResults = [
@@ -1339,13 +1435,12 @@ def functionalTest():
         [108, 117, 123, 110],
         [140, 143, 147, 148],
         [82, 96, 122, 82],
-        [341, 341, 341, 341]
+        [341, 341, 341, 341],
     ]
 
     envs = []
     for graphFile in graphFiles:
-        envs.append(dag.readCCHP(
-            'grafos_breno/' + graphFile))
+        envs.append(dag.readCCHP("grafos_breno/" + graphFile))
 
     for i in range(len(expectedResults)):
         envs[i].resetInstances()
@@ -1353,60 +1448,75 @@ def functionalTest():
         expectedResult = expectedResults[i][0]
         result = ipeft.run()
         # print('LB', ipeft.loadBalance())
-        if (ipeft.makespan() != expectedResult):
+        if ipeft.makespan() != expectedResult:
             raise Exception(
-                f'IPEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}')
+                f"IPEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}"
+            )
 
         envs[i].resetInstances()
         iheft = IHEFT(envs[i])
         expectedResult = expectedResults[i][1]
         iheft.run()
         # print('LB', iheft.loadBalance())
-        if (iheft.makespan() != expectedResult):
+        if iheft.makespan() != expectedResult:
             raise Exception(
-                f'IHEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}')
+                f"IHEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}"
+            )
 
         envs[i].resetInstances()
         cpop = CPOP(envs[i])
         expectedResult = expectedResults[i][2]
         result = cpop.run()
         # print('LB', cpop.loadBalance())
-        if (cpop.makespan() != expectedResult):
+        if cpop.makespan() != expectedResult:
             raise Exception(
-                f'CPOP result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}')
+                f"CPOP result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}"
+            )
 
         envs[i].resetInstances()
         heft = HEFT(envs[i])
         expectedResult = expectedResults[i][3]
         result = heft.run()
         # print('LB', heft.loadBalance())
-        if (heft.makespan() != expectedResult):
+        if heft.makespan() != expectedResult:
             raise Exception(
-                f'HEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}')
+                f"HEFT result error\nIndex: {i}\nReceived: {result}\nExpected: {expectedResult}"
+            )
 
 
 # functionalTest()
-def experimento_breno(listaProcessadores, variacaoTempoExecucaoLista, variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, passo=5, grafosReais=False, grafo_real=None):
+def experimento_breno(
+    listaProcessadores,
+    variacaoTempoExecucaoLista,
+    variacaoCustoComunicacaoLista,
+    numTarefasLista,
+    diretorioBase,
+    passo=5,
+    grafosReais=False,
+    grafo_real=None,
+):
 
-    exp = Experiment(listaProcessadores, variacaoTempoExecucaoLista,
-                     variacaoCustoComunicacaoLista, numTarefasLista, diretorioBase, grafosReais, grafo_real)
+    exp = Experiment(
+        listaProcessadores,
+        variacaoTempoExecucaoLista,
+        variacaoCustoComunicacaoLista,
+        numTarefasLista,
+        diretorioBase,
+        grafosReais,
+        grafo_real,
+    )
     results, grafos = exp.runSchedules(passo)
     # exp.saveResults('test.pkl', results)
     # results = exp.loadResults('test.pkl')
 
     # print('\nResults\n')
-    resultados = {
-        'IPEFT': {},
-        'IHEFT': {},
-        'CPOP': {},
-        'HEFT': {}
-    }
+    resultados = {"IPEFT": {}, "IHEFT": {}, "CPOP": {}, "HEFT": {}}
 
     for numTarefas in numTarefasLista:
-        resultados['IPEFT'][numTarefas] = {}
-        resultados['IHEFT'][numTarefas] = {}
-        resultados['CPOP'][numTarefas] = {}
-        resultados['HEFT'][numTarefas] = {}
+        resultados["IPEFT"][numTarefas] = {}
+        resultados["IHEFT"][numTarefas] = {}
+        resultados["CPOP"][numTarefas] = {}
+        resultados["HEFT"][numTarefas] = {}
 
     for i in range(len(grafos)):
 
@@ -1418,9 +1528,9 @@ def experimento_breno(listaProcessadores, variacaoTempoExecucaoLista, variacaoCu
 
         numTarefas = results[i].numTask
 
-        resultados['IPEFT'][numTarefas][grafo] = {
-            'makespan': results[i].ipeftMakespan,
-            'loadBalance': results[i].ipeftLoadBalance
+        resultados["IPEFT"][numTarefas][grafo] = {
+            "makespan": results[i].ipeftMakespan,
+            "loadBalance": results[i].ipeftLoadBalance,
         }
         # print('IPEFT')
         # print(f'Makespan: {results[i].ipeftMakespan}')
@@ -1428,25 +1538,25 @@ def experimento_breno(listaProcessadores, variacaoTempoExecucaoLista, variacaoCu
 
         # print(json.dumps(results[i].__dict__, indent=4))
 
-        resultados['IHEFT'][numTarefas][grafo] = {
-            'makespan': results[i].iheftMakespan,
-            'loadBalance': results[i].iheftLoadBalance
+        resultados["IHEFT"][numTarefas][grafo] = {
+            "makespan": results[i].iheftMakespan,
+            "loadBalance": results[i].iheftLoadBalance,
         }
         # print('\nIHEFT')
         # print(f'Makespan: {results[i].iheftMakespan}')
         # print(f'Load Balance: {results[i].iheftLoadBalance}')
 
-        resultados['CPOP'][numTarefas][grafo] = {
-            'makespan': results[i].cpopMakespan,
-            'loadBalance': results[i].cpopLoadBalance
+        resultados["CPOP"][numTarefas][grafo] = {
+            "makespan": results[i].cpopMakespan,
+            "loadBalance": results[i].cpopLoadBalance,
         }
         # print('\nCPOP')
         # print(f'Makespan: {results[i].cpopMakespan}')
         # print(f'Load Balance: {results[i].cpopLoadBalance}')
 
-        resultados['HEFT'][numTarefas][grafo] = {
-            'makespan': results[i].heftMakespan,
-            'loadBalance': results[i].heftLoadBalance
+        resultados["HEFT"][numTarefas][grafo] = {
+            "makespan": results[i].heftMakespan,
+            "loadBalance": results[i].heftLoadBalance,
         }
         # print('\nHEFT')
         # print(f'Makespan: {results[i].heftMakespan}')

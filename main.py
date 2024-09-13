@@ -74,8 +74,8 @@ if __name__ == "__main__":
     grafos = [grafoRobot, grafoSparse, grafoFpppp]
 
     parametrosMSE = {
-        "tamanhoPopulacao": 2,
-        "numeroIteracoes": 20,
+        "tamanhoPopulacao": 20,
+        "numeroIteracoes": 2500,
         "chanceCrossoverAlocacao": 0.4,
         "chanceCrossoverEscalonamento": 0.4,
         "chanceMutacaoAlocacao": 0.2,
