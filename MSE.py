@@ -1,4 +1,4 @@
-from random import choice, randint, random, randrange
+from random import choice, randint, random, randrange, shuffle
 
 
 class MSE:
@@ -7,6 +7,7 @@ class MSE:
         self.numeroTarefas = numeroTarefas
         self.numeroProcessadores = numeroProcessadores
         self.alpha = alpha
+        self.taxaElitismo = 0
 
     def cria_cromossomo(self):
 
@@ -16,19 +17,21 @@ class MSE:
 
         i = 0
 
+        listaNumeroProcessadores = range(self.numeroProcessadores)
+
+        indiceTarefa = None
+
+        tarefa = None
+
         while len(cromossomo["escalonamento"]) < self.numeroTarefas:
-
-            indiceTarefa = None
-
-            tarefa = None
 
             if i == 0:
                 indiceTarefa = 0
-                tarefa = listaTarefas[indiceTarefa]
 
             else:
                 indiceTarefa = randrange(len(listaTarefas))
-                tarefa = listaTarefas[indiceTarefa]
+
+            tarefa = listaTarefas[indiceTarefa]
 
             numeroTarefa = tarefa["tarefa"]
             predecessores = tarefa["predecessores"]
@@ -39,11 +42,14 @@ class MSE:
                 cromossomo["escalonamento"], predecessores
             ):
                 cromossomo["escalonamento"].append(numeroTarefa)
-                cromossomo["alocacao"].append(choice(range(self.numeroProcessadores)))
+                cromossomo["alocacao"].append(choice(listaNumeroProcessadores))
                 listaTarefas.pop(indiceTarefa)
 
                 i += 1
 
+        cromossomo["makespan"] = self.makespan(cromossomo)
+        cromossomo["loadBalance"] = self.load_balance(cromossomo)
+        cromossomo["fitness"] = self.fitness(cromossomo)
         return cromossomo
 
     def predecessores_alocados(self, cromossomo, predecessores):
@@ -55,27 +61,14 @@ class MSE:
         return all(predecessor in cromossomo for predecessor in predecessores)
 
     def cria_populacao_inicial(self, tamanhoPopulacao):
-
-        populacao = []
-
-        for _ in range(tamanhoPopulacao):
-            populacao.append(self.cria_cromossomo())
-
-        return populacao
+        return [self.cria_cromossomo() for _ in range(tamanhoPopulacao)]
 
     def spx_alocacao(self, pai1, pai2):
-
-        filho1 = []
-
-        filho2 = []
-
         pontoCorte = randint(0, self.numeroTarefas - 1)
-
-        filho1 = pai1[:pontoCorte] + pai2[pontoCorte:]
-
-        filho2 = pai2[:pontoCorte] + pai1[pontoCorte:]
-
-        return [filho1, filho2]
+        return [
+            pai1[:pontoCorte] + pai2[pontoCorte:],
+            pai2[:pontoCorte] + pai1[pontoCorte:],
+        ]
 
     def spx_escalonamento(self, pai1, pai2):
         filho1 = []
@@ -149,14 +142,13 @@ class MSE:
                     predecessoresTarefa2.remove(tarefa)
 
                 if len(predecessoresTarefa2) == 0:
-                    novoIndividuo = individuo.copy()
-                    novoIndividuo[posicaoTarefa1] = tarefa2
-                    novoIndividuo[novaPosicaoTarefa1] = tarefa1
+                    individuo[posicaoTarefa1] = tarefa2
+                    individuo[novaPosicaoTarefa1] = tarefa1
                     # print('Tarefa 1:', tarefa1)
                     # print('Tarefa 2:', tarefa2)
                     # print('Posição tarefa 1:', posicaoTarefa1)
                     # print('Nova posição tarefa 1:', novaPosicaoTarefa1)
-                    return novoIndividuo
+                    return individuo
 
     def pm(self, individuo):
         posicao = randint(0, len(individuo) - 1)
@@ -165,17 +157,13 @@ class MSE:
             novoProcessador = randint(0, self.numeroProcessadores - 1)
 
             if novoProcessador != individuo[posicao]:
-                novoIndividuo = individuo.copy()
-                novoIndividuo[posicao] = novoProcessador
-                return novoIndividuo
+                individuo[posicao] = novoProcessador
+                return individuo
 
     def ajuste_fitness(self, fitness):
         if fitness == 0:
             return 1
         return 1 / fitness
-
-    def soma_fitness(self, fitness):
-        return sum(fitness)
 
     def constroe_roleta(self, populacao, somaFitness):
         roleta = []
@@ -183,7 +171,7 @@ class MSE:
         limiteSuperior = 0.0
 
         for individuo in populacao:
-            fitness = self.ajuste_fitness(self.fitness(individuo))
+            fitness = self.ajuste_fitness(individuo["fitness"])
             probabilidade = fitness / somaFitness
             limiteInferior = limiteSuperior
             limiteSuperior = limiteInferior + probabilidade
@@ -193,11 +181,9 @@ class MSE:
 
     def selecao_roleta(self, populacao):
 
-        fitness = [
-            self.ajuste_fitness(self.fitness(individuo)) for individuo in populacao
-        ]
+        fitness = [self.ajuste_fitness(individuo["fitness"]) for individuo in populacao]
 
-        somaFitness = self.soma_fitness(fitness)
+        somaFitness = sum(fitness)
 
         roleta = self.constroe_roleta(populacao, somaFitness)
 
@@ -211,12 +197,10 @@ class MSE:
 
         raise ValueError("Não foi possível selecionar um indivíduo da roleta")
 
-    def elitismo(self, populacao, taxaElitismo):
-        populacaoOrdenada = sorted(
-            populacao, key=lambda individuo: self.fitness(individuo)
-        )
+    def elitismo(self, populacao):
+        populacaoOrdenada = sorted(populacao, key=lambda x: x["fitness"])
 
-        numeroElitismo = int(len(populacao) * taxaElitismo)
+        numeroElitismo = int(len(populacao) * self.taxaElitismo)
 
         return populacaoOrdenada[:numeroElitismo]
 
@@ -232,79 +216,52 @@ class MSE:
         taxaElitismo,
     ):
         populacao = self.cria_populacao_inicial(tamanhoPopulacao)
-
+        self.taxaElitismo = taxaElitismo
         melhorIndividuo = None
-
         mediasFitness = []
         mediasMakespan = []
         mediasLoadBalance = []
 
         for iteracao in range(numeroIteracoes):
+            individuo = min(populacao, key=lambda x: x["fitness"])
 
             if iteracao == 0:
-                individuo = min(
-                    populacao, key=lambda individuo: self.fitness(individuo)
-                )
                 melhorIndividuo = {
                     "individuo": individuo,
                     "iteracao": iteracao + 1,
-                    "fitness": self.fitness(individuo),
-                    "makespan": self.makespan(individuo),
-                    "loadBalance": self.load_balance(individuo),
+                    "fitness": individuo["fitness"],
+                    "makespan": individuo["makespan"],
+                    "loadBalance": individuo["loadBalance"],
                 }
 
-            fitnessMedia = sum(
-                [self.fitness(individuo) for individuo in populacao]
-            ) / len(populacao)
-            mediasFitness.append(fitnessMedia)
-            # print(f'\nMédia fitness da população: {fitnessMedia:.7f}')
+            # fitnessMedia = sum([individuo["fitness"] for individuo in populacao]) / len(populacao)
+            # mediasFitness.append(fitnessMedia)
 
-            fitnessMediaMakespan = sum(
-                [self.makespan(individuo) for individuo in populacao]
-            ) / len(populacao)
-            mediasMakespan.append(fitnessMediaMakespan)
-            # print(f'\nMédia makespan da população: {fitnessMediaMakespan:.7f}')
+            # fitnessMediaMakespan = sum([individuo["makespan"] for individuo in populacao]) / len(populacao)
+            # mediasMakespan.append(fitnessMediaMakespan)
 
-            fitnessMediaLoadBalance = sum(
-                [self.load_balance(individuo) for individuo in populacao]
-            ) / len(populacao)
-            mediasLoadBalance.append(fitnessMediaLoadBalance)
-            # print(f'\nMédia loadbalance da população: {fitnessMediaLoadBalance:.7f}')
-
-            individuo = min(populacao, key=lambda individuo: self.fitness(individuo))
+            # fitnessMediaLoadBalance = sum([individuo["loadBalance"] for individuo in populacao]) / len(populacao)
+            # mediasLoadBalance.append(fitnessMediaLoadBalance)
 
             melhorIndividuoDaPopulacao = {
                 "individuo": individuo,
                 "iteracao": iteracao + 1,
-                "fitness": self.fitness(individuo),
-                "makespan": self.makespan(individuo),
-                "loadBalance": self.load_balance(individuo),
+                "fitness": individuo["fitness"],
+                "makespan": individuo["makespan"],
+                "loadBalance": individuo["loadBalance"],
             }
 
             if melhorIndividuoDaPopulacao["fitness"] < melhorIndividuo["fitness"]:
                 melhorIndividuo = melhorIndividuoDaPopulacao
 
-            elite = self.elitismo(populacao, taxaElitismo)
+            elite = self.elitismo(populacao)
 
             novaPopulacao = []
 
-            if iteracao == numeroIteracoes - 1:
-                pass
-
             while len(novaPopulacao) < tamanhoPopulacao - len(elite):
 
-                if iteracao == numeroIteracoes - 1:
-                    pass
-
                 pai1 = populacao[self.selecao_roleta(populacao)]
-
-                while pai1 in elite:
-                    pai1 = populacao[self.selecao_roleta(populacao)]
-
                 pai2 = populacao[self.selecao_roleta(populacao)]
-
-                while pai2 in elite:
-                    pai2 = populacao[self.selecao_roleta(populacao)]
 
                 while pai1 == pai2:
                     pai2 = populacao[self.selecao_roleta(populacao)]
@@ -340,11 +297,16 @@ class MSE:
                     "alocacao": filhosAlocacao[0],
                     "escalonamento": filhosEscalonamento[0],
                 }
-
+                filho1["makespan"] = self.makespan(filho1)
+                filho1["loadBalance"] = self.load_balance(filho1)
+                filho1["fitness"] = self.fitness(filho1)
                 filho2 = {
                     "alocacao": filhosAlocacao[1],
                     "escalonamento": filhosEscalonamento[1],
                 }
+                filho2["makespan"] = self.makespan(filho2)
+                filho2["loadBalance"] = self.load_balance(filho2)
+                filho2["fitness"] = self.fitness(filho2)
 
                 if self.individuo_valido(filho1):
                     novaPopulacao.append(filho1)
@@ -355,8 +317,9 @@ class MSE:
 
             # print(f'Iteração {iteracao + 1} concluída')
 
-            for individuo in elite:
-                novaPopulacao.append(individuo)
+            novaPopulacao.extend(elite)
+
+            shuffle(novaPopulacao)
 
             populacao = novaPopulacao.copy()
 
@@ -514,7 +477,7 @@ class MSE:
 
         tempoMedioProcessamento = tempoProcessamentoTotal / self.numeroProcessadores
 
-        makespan = self.makespan(individuo)
+        makespan = individuo["makespan"]
 
         return makespan / tempoMedioProcessamento
 
@@ -549,7 +512,7 @@ class MSE:
         return max(tempoProcessamento)
 
     def fitness(self, individuo):
-        makespan = self.makespan(individuo)
-        loadBalance = self.load_balance(individuo)
+        makespan = individuo["makespan"]
+        loadBalance = individuo["loadBalance"]
 
         return self.alpha * makespan + (1 - self.alpha) * loadBalance
