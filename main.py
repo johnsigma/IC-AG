@@ -25,7 +25,7 @@ def experimento(
         dicResultado[alpha]["loadBalance"] = []
         dicResultado[alpha]["iteracao"] = []
 
-        for _ in range(1, 2):
+        for _ in range(1, 10):
             mse = MSE(dic, numTarefas, numProcessadores, float(alpha))
             mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo = (
                 mse.inicio(**parametrosMSE)
