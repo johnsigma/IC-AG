@@ -1,86 +1,85 @@
+from threading import Thread
+from time import time
+from tkinter import ttk, messagebox, Text, END
+import sys
 from uuid import uuid4
-import time
 import pandas as pd
-import numpy as np
-from funcoes import (
-    ler_arquivo_ghe,
-    ler_numero_tarefas,
-)
-from MSE import MSE
+from funcoes import ler_numero_tarefas
 from task_scheduling import experimento_breno
-from sys import argv
-from tkinter import Tk
+from main import experimento
 
-
-def experimento(
-    listaAlphas, arquivoGrafo, parametrosMSE, numTarefas, numProcessadores=None
-):
-    if numProcessadores is None:
-        numProcessadores = int(arquivoGrafo.split("-")[1])
-
-    dic = ler_arquivo_ghe(arquivoGrafo, numProcessadores)
-    dicResultado = {}
-
-    for alpha in listaAlphas:
-        dicResultado[alpha] = {}
-        dicResultado[alpha]["makespan"] = []
-        dicResultado[alpha]["loadBalance"] = []
-        dicResultado[alpha]["iteracao"] = []
-
-        for _ in range(1, 10):
-            mse = MSE(dic, numTarefas, numProcessadores, float(alpha))
-            mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo = (
-                mse.inicio(**parametrosMSE)
-            )
-            dicResultado[alpha]["makespan"].append(melhorIndividuo["makespan"])
-            dicResultado[alpha]["loadBalance"].append(melhorIndividuo["loadBalance"])
-            dicResultado[alpha]["iteracao"].append(melhorIndividuo["iteracao"])
-
-        dicResultado[alpha]["mediaMakespan"] = np.mean(dicResultado[alpha]["makespan"])
-        dicResultado[alpha]["mediaLoadBalance"] = np.mean(
-            dicResultado[alpha]["loadBalance"]
-        )
-        dicResultado[alpha]["mediaIteracao"] = np.mean(dicResultado[alpha]["iteracao"])
-        dicResultado[alpha]["desvioPadraoMakespan"] = np.std(
-            dicResultado[alpha]["makespan"]
-        )
-        dicResultado[alpha]["desvioPadraoLoadBalance"] = np.std(
-            dicResultado[alpha]["loadBalance"]
-        )
-        dicResultado[alpha]["desvioPadraoIteracao"] = np.std(
-            dicResultado[alpha]["iteracao"]
-        )
-
-    return dicResultado
-
-
-if __name__ == "__main__":
-    
-    
-    use_gui = "--gui" in argv # Verifica se o argumento --gui foi passado
-
-    parametrosMSE = {
-        "tamanhoPopulacao": 20,
-        "numeroIteracoes": 1000,
-        "chanceCrossoverAlocacao": 0.4,
-        "chanceCrossoverEscalonamento": 0.4,
-        "chanceMutacaoAlocacao": 0.2,
-        "chanceMutacaoEscalonamento": 0.2,
-        "taxaElitismo": 0.2,
-    }
-    
-    if use_gui:
-        from MSEParametersGUI import MSEParametersGUI
-        root = Tk()
-        app = MSEParametersGUI(root, parametrosMSE)
-        root.mainloop()
-    else:
-    
-        inicio = time.time()
+class MSEParametersGUI:
+    def __init__(self, root, parametrosMSE):
+        self.root = root
+        self.root.title("Parâmetros MSE")
+        self.parametrosMSE = parametrosMSE
+        self.entries = {}
         
+        # Dicionário para mapear os parâmetros para labels mais descritivos
+        labels = {
+            "tamanhoPopulacao": "Tamanho da População",
+            "numeroIteracoes": "Número de Iterações",
+            "chanceCrossoverAlocacao": "Chance de Crossover de Alocação",
+            "chanceCrossoverEscalonamento": "Chance de Crossover de Escalonamento",
+            "chanceMutacaoAlocacao": "Chance de Mutação de Alocação",
+            "chanceMutacaoEscalonamento": "Chance de Mutação de Escalonamento",
+            "taxaElitismo": "Taxa de Elitismo",
+        }
+
+        row = 0
+        for param, value in parametrosMSE.items():
+            label_text = labels.get(param, param)  # Obtém o label descritivo ou usa o nome do parâmetro
+            label = ttk.Label(root, text=label_text)
+            label.grid(row=row, column=0, padx=10, pady=5, sticky="W")
+            entry = ttk.Entry(root)
+            entry.insert(0, str(value))
+            entry.grid(row=row, column=1, padx=10, pady=5)
+            self.entries[param] = entry
+            row += 1
+
+        save_button = ttk.Button(root, text="Iniciar experimento", command=self.start_experiment)
+        save_button.grid(row=row, column=0, columnspan=2, pady=10)
+        
+        # Adicionar widget de texto para exibir o log
+        self.log_text = Text(root, height=20, width=80)
+        self.log_text.grid(row=row+1, column=0, columnspan=2, padx=10, pady=10)
+        
+        # Sobrescrever o comportamento do evento de fechamento da janela
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def save_parameters(self):
+        try:
+            for param, entry in self.entries.items():
+                value = entry.get()
+                if param in ["tamanhoPopulacao", "numeroIteracoes"]:
+                    self.parametrosMSE[param] = int(value)
+                else:
+                    self.parametrosMSE[param] = float(value) if '.' in value else int(value)
+        except ValueError:
+            messagebox.showerror("Erro de Validação", f"Valor inválido para {param}: {value}")
+            
+    def on_closing(self):
+        # Interromper a execução do programa ao clicar no 'X'
+        self.root.quit()
+        sys.exit()
+        
+    def start_experiment(self):
+        self.save_parameters()
+        self.log_text.delete(1.0, END)  # Limpar o log antes de iniciar o experimento
+        sys.stdout = TextRedirector(self.log_text, "stdout")
+        sys.stderr = TextRedirector(self.log_text, "stderr")
+        
+        experiment_thread = Thread(target=self.run_experiment)
+        experiment_thread.start()
+
+    def run_experiment(self):
+
+        inicio = time()
+
         grafoRobot = "grafos_experimento/robot-4-20-30.stg"
         grafoSparse = "grafos_experimento/sparse-4-100-30.stg"
         grafoFpppp = "grafos_experimento/fpppp-8-20-30.stg"
+
         grafos = [grafoRobot, grafoSparse, grafoFpppp]
 
         listaAlphas = ["0", "0.25", "0.5", "0.75", "1"]
@@ -94,7 +93,7 @@ if __name__ == "__main__":
             print(f"Experimento com AG: Iniciado")
 
             numeroTarefas = ler_numero_tarefas(grafo)
-            dicResultadoMSE = experimento(listaAlphas, grafo, parametrosMSE, numeroTarefas)
+            dicResultadoMSE = experimento(listaAlphas, grafo, self.parametrosMSE, numeroTarefas)
             print(f"Experimento com AG: Finalizado")
 
             splitGrafo = grafo.split("-")
@@ -148,7 +147,7 @@ if __name__ == "__main__":
 
             paramentrosMSEAux = []
 
-            for param, value in parametrosMSE.items():              
+            for param, value in self.parametrosMSE.items():
                 paramentrosMSEAux.append(
                     {
                         "Parametro": param,
@@ -176,7 +175,7 @@ if __name__ == "__main__":
 
         print("Experimento: Finalizado")
 
-        fim = time.time()
+        fim = time()
         tempo_em_segundos = fim - inicio
         tempo_em_minutos = tempo_em_segundos / 60
 
@@ -184,6 +183,23 @@ if __name__ == "__main__":
         nomeArquivoTempo = f"resultados/tempo_{hashAleatorio}.txt"
         with open(nomeArquivoTempo, "w", encoding="utf-8") as arquivo:
             arquivo.write(f"Tempo de execucao: {round(tempo_em_minutos, 2)} minutos")
-
-        print(f"Tempo de execucao: {round(tempo_em_minutos, 2)} minutos")
+        
+        # Adicionar mensagem de conclusão na interface gráfica
+        self.log_text.insert(END, "\nExperimento concluído com sucesso!\n")
+        print(f"\nTempo de execucao: {round(tempo_em_minutos,2)} minutos")
         print(f"Tempo salvo em: {nomeArquivoTempo}")
+        
+
+
+class TextRedirector:
+    def __init__(self, widget, tag="stdout"):
+        self.widget = widget
+        self.tag = tag
+
+    def write(self, str):
+        self.widget.insert(END, str)
+        self.widget.see(END)
+        self.widget.update_idletasks()  # Atualiza a interface gráfica
+
+    def flush(self):
+        pass

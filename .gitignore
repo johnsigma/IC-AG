@@ -4,3 +4,5 @@ grafos/
 grafos_breno/
 grafos_gerados_dos_reais/
 venv/
+resultados/*.csv
+resultados/*.txt
