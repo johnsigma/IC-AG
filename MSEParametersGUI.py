@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox, Text, END
 import sys
 from uuid import uuid4
 import pandas as pd
-from funcoes import ler_numero_tarefas
+from funcoes import ler_numero_tarefas, ler_arquivo_ghe, makespan, load_balance
 from task_scheduling import experimento_breno
 from main import experimento
 
@@ -75,11 +75,10 @@ class MSEParametersGUI:
     def run_experiment(self):
 
         inicio = time()
-
+        
         grafoRobot = "grafos_experimento/robot-4-20-30.stg"
         grafoSparse = "grafos_experimento/sparse-4-100-30.stg"
         grafoFpppp = "grafos_experimento/fpppp-8-20-30.stg"
-
         grafos = [grafoRobot, grafoSparse, grafoFpppp]
 
         listaAlphas = ["0", "0.25", "0.5", "0.75", "1"]
@@ -93,7 +92,9 @@ class MSEParametersGUI:
             print(f"Experimento com AG: Iniciado")
 
             numeroTarefas = ler_numero_tarefas(grafo)
-            dicResultadoMSE = experimento(listaAlphas, grafo, self.parametrosMSE, numeroTarefas)
+            numProcessadores = int(grafo.split("-")[1])
+            dic = ler_arquivo_ghe(grafo, numProcessadores)
+            dicResultadoMSE = experimento(listaAlphas, dic, self.parametrosMSE, numeroTarefas, numProcessadores)
             print(f"Experimento com AG: Finalizado")
 
             splitGrafo = grafo.split("-")
@@ -114,6 +115,48 @@ class MSEParametersGUI:
                 True,
                 grafo,
             )
+            
+            tarefasBrenoIpeft = resultadoBreno['IPEFT'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoIheft = resultadoBreno['IHEFT'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoCpop = resultadoBreno['CPOP'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoHeft = resultadoBreno['HEFT'][numeroTarefas][grafo]["escalonamento"]
+            
+            makespanBrenoIpeft = makespan(tarefasBrenoIpeft, numProcessadores, dic)
+            loadBalanceBrenoIpeft = load_balance(tarefasBrenoIpeft, numProcessadores, dic, makespanBrenoIpeft)
+            makespanBrenoIheft = makespan(tarefasBrenoIheft, numProcessadores, dic)
+            loadBalanceBrenoIheft = load_balance(tarefasBrenoIheft, numProcessadores, dic, makespanBrenoIheft)
+            makespanBrenoCpop = makespan(tarefasBrenoCpop, numProcessadores, dic)
+            loadBalanceBrenoCpop = load_balance(tarefasBrenoCpop, numProcessadores, dic, makespanBrenoCpop)
+            makespanBrenoHeft = makespan(tarefasBrenoHeft, numProcessadores, dic)
+            loadBalanceBrenoHeft = load_balance(tarefasBrenoHeft, numProcessadores, dic, makespanBrenoHeft)
+            
+            # print(f"Resultados Breno grafo: {grafo}")
+            # print(f"Makespan IPEFT (MSE): {makespanBrenoIpeft}")
+            # print(f"Makespan IPEFT (Breno): {resultadoBreno['IPEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance IPEFT (MSE): {loadBalanceBrenoIpeft}")
+            # print(f"Load Balance IPEFT (Breno): {resultadoBreno['IPEFT'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan IHEFT (MSE): {makespanBrenoIheft}")
+            # print(f"Makespan IHEFT (Breno): {resultadoBreno['IHEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance IHEFT (MSE): {loadBalanceBrenoIheft}")
+            # print(f"Load Balance IHEFT (Breno): {resultadoBreno['IHEFT'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan CPOP (MSE): {makespanBrenoCpop}")
+            # print(f"Makespan CPOP (Breno): {resultadoBreno['CPOP'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance CPOP (MSE): {loadBalanceBrenoCpop}")
+            # print(f"Load Balance CPOP (Breno): {resultadoBreno['CPOP'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan HEFT (MSE): {makespanBrenoHeft}")
+            # print(f"Makespan HEFT (Breno): {resultadoBreno['HEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance HEFT (MSE): {loadBalanceBrenoHeft}")
+            # print(f"Load Balance HEFT (Breno): {resultadoBreno['HEFT'][numeroTarefas][grafo]['loadBalance']}\n\n")
+            
+            resultadoBreno['IPEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoIpeft
+            resultadoBreno['IPEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoIpeft
+            resultadoBreno['IHEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoIheft
+            resultadoBreno['IHEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoIheft
+            resultadoBreno['CPOP'][numeroTarefas][grafo]['makespan'] = makespanBrenoCpop
+            resultadoBreno['CPOP'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoCpop
+            resultadoBreno['HEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoHeft
+            resultadoBreno['HEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoHeft
+            
             print("Experimento com IPEFT, IHEFT, CPOP, HEFT: Finalizado")
 
             resultados = []
@@ -147,7 +190,7 @@ class MSEParametersGUI:
 
             paramentrosMSEAux = []
 
-            for param, value in self.parametrosMSE.items():
+            for param, value in self.parametrosMSE.items():              
                 paramentrosMSEAux.append(
                     {
                         "Parametro": param,
@@ -183,10 +226,10 @@ class MSEParametersGUI:
         nomeArquivoTempo = f"resultados/tempo_{hashAleatorio}.txt"
         with open(nomeArquivoTempo, "w", encoding="utf-8") as arquivo:
             arquivo.write(f"Tempo de execucao: {round(tempo_em_minutos, 2)} minutos")
-        
+
         # Adicionar mensagem de conclusão na interface gráfica
         self.log_text.insert(END, "\nExperimento concluído com sucesso!\n")
-        print(f"\nTempo de execucao: {round(tempo_em_minutos,2)} minutos")
+        print(f"Tempo de execucao: {round(tempo_em_minutos, 2)} minutos")
         print(f"Tempo salvo em: {nomeArquivoTempo}")
         
 

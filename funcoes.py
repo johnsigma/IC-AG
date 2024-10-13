@@ -579,3 +579,44 @@ def converte_grafos_reais_stg_em_ghe():
                         f"{arquivo}-{numProcessadores}-{variacaoCustoComputacional}-{variacaoCustoComunicacao}.stg",
                         numTarefas,
                     )
+
+def makespan(tarefas, numeroProcessadores, dic):
+    tempoProcessamento = [0] * numeroProcessadores
+    
+    for tarefa in tarefas:
+        processador = tarefa['processorId']
+        tarefaId = str(tarefa['taskId'])
+        
+        tempoCominicacaoAcc = 0
+        
+        predecessores = tarefa['predecessores']
+        
+        if len(predecessores) > 0:
+            for i, predecessor in enumerate(predecessores):
+                predecessorId = predecessor['taskId']
+                processadorPredecessor = predecessor['processorId']
+                
+                if processadorPredecessor != processador:
+                    tempoComunicacao = int(dic[tarefaId]['custos_comunicacao'][i])
+                    
+                    tempoCominicacaoAcc += tempoComunicacao
+        
+        tempoProcessamento[processador] += (int(dic[tarefaId]['tempos_execucao'][processador]) + tempoCominicacaoAcc)
+        
+    return max(tempoProcessamento)
+
+def load_balance(tarefas, numeroProcessadores, dic, makespanValue):
+    tempoProcessadores = [0] * numeroProcessadores
+    
+    for tarefa in tarefas:
+        tarefaId = str(tarefa['taskId'])
+        processador = tarefa['processorId']
+        tempoExecucao = int(dic[tarefaId]['tempos_execucao'][processador])
+        
+        tempoProcessadores[processador] += tempoExecucao
+    
+    tempoProcessamentoTotal = sum(tempoProcessadores)
+    
+    tempoMedioProcessamento = tempoProcessamentoTotal / numeroProcessadores
+    
+    return makespanValue / tempoMedioProcessamento

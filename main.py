@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 import time
 import pandas as pd
@@ -5,6 +6,8 @@ import numpy as np
 from funcoes import (
     ler_arquivo_ghe,
     ler_numero_tarefas,
+    makespan,
+    load_balance,
 )
 from MSE import MSE
 from task_scheduling import experimento_breno
@@ -13,12 +16,9 @@ from tkinter import Tk
 
 
 def experimento(
-    listaAlphas, arquivoGrafo, parametrosMSE, numTarefas, numProcessadores=None
+    listaAlphas, dic, parametrosMSE, numTarefas, numProcessadores=None
 ):
-    if numProcessadores is None:
-        numProcessadores = int(arquivoGrafo.split("-")[1])
 
-    dic = ler_arquivo_ghe(arquivoGrafo, numProcessadores)
     dicResultado = {}
 
     for alpha in listaAlphas:
@@ -54,14 +54,12 @@ def experimento(
     return dicResultado
 
 
-if __name__ == "__main__":
-    
-    
+def main():
     use_gui = "--gui" in argv # Verifica se o argumento --gui foi passado
 
     parametrosMSE = {
         "tamanhoPopulacao": 20,
-        "numeroIteracoes": 1000,
+        "numeroIteracoes": 200,
         "chanceCrossoverAlocacao": 0.4,
         "chanceCrossoverEscalonamento": 0.4,
         "chanceMutacaoAlocacao": 0.2,
@@ -94,7 +92,9 @@ if __name__ == "__main__":
             print(f"Experimento com AG: Iniciado")
 
             numeroTarefas = ler_numero_tarefas(grafo)
-            dicResultadoMSE = experimento(listaAlphas, grafo, parametrosMSE, numeroTarefas)
+            numProcessadores = int(grafo.split("-")[1])
+            dic = ler_arquivo_ghe(grafo, numProcessadores)
+            dicResultadoMSE = experimento(listaAlphas, dic, parametrosMSE, numeroTarefas, numProcessadores)
             print(f"Experimento com AG: Finalizado")
 
             splitGrafo = grafo.split("-")
@@ -115,6 +115,48 @@ if __name__ == "__main__":
                 True,
                 grafo,
             )
+            
+            tarefasBrenoIpeft = resultadoBreno['IPEFT'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoIheft = resultadoBreno['IHEFT'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoCpop = resultadoBreno['CPOP'][numeroTarefas][grafo]["escalonamento"]
+            tarefasBrenoHeft = resultadoBreno['HEFT'][numeroTarefas][grafo]["escalonamento"]
+            
+            makespanBrenoIpeft = makespan(tarefasBrenoIpeft, numProcessadores, dic)
+            loadBalanceBrenoIpeft = load_balance(tarefasBrenoIpeft, numProcessadores, dic, makespanBrenoIpeft)
+            makespanBrenoIheft = makespan(tarefasBrenoIheft, numProcessadores, dic)
+            loadBalanceBrenoIheft = load_balance(tarefasBrenoIheft, numProcessadores, dic, makespanBrenoIheft)
+            makespanBrenoCpop = makespan(tarefasBrenoCpop, numProcessadores, dic)
+            loadBalanceBrenoCpop = load_balance(tarefasBrenoCpop, numProcessadores, dic, makespanBrenoCpop)
+            makespanBrenoHeft = makespan(tarefasBrenoHeft, numProcessadores, dic)
+            loadBalanceBrenoHeft = load_balance(tarefasBrenoHeft, numProcessadores, dic, makespanBrenoHeft)
+            
+            # print(f"Resultados Breno grafo: {grafo}")
+            # print(f"Makespan IPEFT (MSE): {makespanBrenoIpeft}")
+            # print(f"Makespan IPEFT (Breno): {resultadoBreno['IPEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance IPEFT (MSE): {loadBalanceBrenoIpeft}")
+            # print(f"Load Balance IPEFT (Breno): {resultadoBreno['IPEFT'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan IHEFT (MSE): {makespanBrenoIheft}")
+            # print(f"Makespan IHEFT (Breno): {resultadoBreno['IHEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance IHEFT (MSE): {loadBalanceBrenoIheft}")
+            # print(f"Load Balance IHEFT (Breno): {resultadoBreno['IHEFT'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan CPOP (MSE): {makespanBrenoCpop}")
+            # print(f"Makespan CPOP (Breno): {resultadoBreno['CPOP'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance CPOP (MSE): {loadBalanceBrenoCpop}")
+            # print(f"Load Balance CPOP (Breno): {resultadoBreno['CPOP'][numeroTarefas][grafo]['loadBalance']}")
+            # print(f"Makespan HEFT (MSE): {makespanBrenoHeft}")
+            # print(f"Makespan HEFT (Breno): {resultadoBreno['HEFT'][numeroTarefas][grafo]['makespan']}")
+            # print(f"Load Balance HEFT (MSE): {loadBalanceBrenoHeft}")
+            # print(f"Load Balance HEFT (Breno): {resultadoBreno['HEFT'][numeroTarefas][grafo]['loadBalance']}\n\n")
+            
+            resultadoBreno['IPEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoIpeft
+            resultadoBreno['IPEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoIpeft
+            resultadoBreno['IHEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoIheft
+            resultadoBreno['IHEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoIheft
+            resultadoBreno['CPOP'][numeroTarefas][grafo]['makespan'] = makespanBrenoCpop
+            resultadoBreno['CPOP'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoCpop
+            resultadoBreno['HEFT'][numeroTarefas][grafo]['makespan'] = makespanBrenoHeft
+            resultadoBreno['HEFT'][numeroTarefas][grafo]['loadBalance'] = loadBalanceBrenoHeft
+            
             print("Experimento com IPEFT, IHEFT, CPOP, HEFT: Finalizado")
 
             resultados = []
@@ -187,3 +229,8 @@ if __name__ == "__main__":
 
         print(f"Tempo de execucao: {round(tempo_em_minutos, 2)} minutos")
         print(f"Tempo salvo em: {nomeArquivoTempo}")
+
+
+if __name__ == "__main__":
+    main()   
+    

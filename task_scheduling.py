@@ -1296,9 +1296,40 @@ class Experiment:
         file = open(resultsDiretory, "rb")
         return pickle.load(file)
 
+
+    def getEscalonamento(self, tasks):
+        
+        results = []
+        
+        for task in tasks:
+            taskId = task.id
+            processorId = task.processorId
+            predecessores = []
+            
+            for edge in task.predEdges:
+                predecessorTask = edge.predecessorTask
+                
+                if predecessorTask == task.id:
+                    continue
+                
+                predecessores.append({
+                    'taskId': predecessorTask,
+                    'processorId': tasks[predecessorTask].processorId
+                })
+            
+            results.append({
+                'taskId': taskId,
+                'processorId': processorId,
+                'predecessores': predecessores
+            })
+            
+        return results
+            
+
     def runSchedules(self, passo=5):
         metricsResults = []
         grafos = []
+        
         for numTask in self.numTasks:
             env = 1
             i = 0
@@ -1340,26 +1371,35 @@ class Experiment:
 
                             ipeft = IPEFT(env)
                             ipeft.run()
+                            # for task in ipeft.tasks:
+                            #     taskId = task.id
+                            #     print(f'Task: {taskId}, {task.processorId}')
+                            #     for edge in task.predEdges:
+                            #         print(f'Predecessor: {edge.predecessorTask}, {edge.successorTask}')                                
                             metricsResult.ipeftMakespan = ipeft.makespan()
-                            metricsResult.ipeftLoadBalance = ipeft.loadBalance()
+                            metricsResult.ipeftLoadBalance = ipeft.loadBalance()   
+                            metricsResult.ipeftEscalonamento = self.getEscalonamento(ipeft.tasks)
 
                             env.resetInstances()
                             iheft = IHEFT(env)
                             iheft.run()
                             metricsResult.iheftMakespan = iheft.makespan()
                             metricsResult.iheftLoadBalance = iheft.loadBalance()
+                            metricsResult.iheftEscalonamento = self.getEscalonamento(iheft.tasks)
 
                             env.resetInstances()
                             cpop = CPOP(env)
                             cpop.run()
                             metricsResult.cpopMakespan = cpop.makespan()
                             metricsResult.cpopLoadBalance = cpop.loadBalance()
+                            metricsResult.cpopEscalonamento = self.getEscalonamento(cpop.tasks)
 
                             env.resetInstances()
                             heft = HEFT(env)
                             heft.run()
                             metricsResult.heftMakespan = heft.makespan()
                             metricsResult.heftLoadBalance = heft.loadBalance()
+                            metricsResult.heftEscalonamento = self.getEscalonamento(heft.tasks)
 
                             metricsResults.append(metricsResult)
 
@@ -1531,6 +1571,7 @@ def experimento_breno(
         resultados["IPEFT"][numTarefas][grafo] = {
             "makespan": results[i].ipeftMakespan,
             "loadBalance": results[i].ipeftLoadBalance,
+            "escalonamento": results[i].ipeftEscalonamento,
         }
         # print('IPEFT')
         # print(f'Makespan: {results[i].ipeftMakespan}')
@@ -1541,6 +1582,7 @@ def experimento_breno(
         resultados["IHEFT"][numTarefas][grafo] = {
             "makespan": results[i].iheftMakespan,
             "loadBalance": results[i].iheftLoadBalance,
+            "escalonamento": results[i].iheftEscalonamento,
         }
         # print('\nIHEFT')
         # print(f'Makespan: {results[i].iheftMakespan}')
@@ -1549,6 +1591,7 @@ def experimento_breno(
         resultados["CPOP"][numTarefas][grafo] = {
             "makespan": results[i].cpopMakespan,
             "loadBalance": results[i].cpopLoadBalance,
+            "escalonamento": results[i].cpopEscalonamento,
         }
         # print('\nCPOP')
         # print(f'Makespan: {results[i].cpopMakespan}')
@@ -1557,6 +1600,7 @@ def experimento_breno(
         resultados["HEFT"][numTarefas][grafo] = {
             "makespan": results[i].heftMakespan,
             "loadBalance": results[i].heftLoadBalance,
+            "escalonamento": results[i].heftEscalonamento,
         }
         # print('\nHEFT')
         # print(f'Makespan: {results[i].heftMakespan}')
