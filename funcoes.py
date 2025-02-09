@@ -1,10 +1,14 @@
 import copy
+import hashlib
+import json
 import pickle
 import random
 
 import numpy as np
 import pandas as pd
 from scipy.stats import wilcoxon
+
+from MSE import MSE
 
 
 # Configurações para exibir todas as colunas e ajustar a largura
@@ -550,7 +554,7 @@ def salva_dataframe_em_txt(df, filename):
         file.write(df_string)
 
 
-def converte_grafos_reais_stg_em_ghe():
+def converte_grafos_reais_gho_em_ghe():
     basePath = "grafos_reais/"
 
     listaArquivos = [f"{basePath}robot", f"{basePath}sparse", f"{basePath}fpppp"]
@@ -620,3 +624,33 @@ def load_balance(tarefas, numeroProcessadores, dic, makespanValue):
     tempoMedioProcessamento = tempoProcessamentoTotal / numeroProcessadores
     
     return makespanValue / tempoMedioProcessamento
+
+
+def gera_hash(objeto):
+    # Converte o objeto para uma string JSON
+    objeto_str = json.dumps(objeto, sort_keys=True)
+    # Gera o hash utilizando SHA-256
+    hash_objeto = hashlib.sha256(objeto_str.encode()).hexdigest()
+    return hash_objeto
+
+
+def gera_populacao_inicial(dic, numTarefas, numProcessadores, tamanhoPopulacao):
+    
+    mse = MSE(dic, numTarefas, numProcessadores)
+    
+    populacao = mse.cria_populacao_inicial(tamanhoPopulacao)
+    
+    return populacao
+    
+
+def salva_populacao(populacao):
+    
+    hashAleatorio = gera_hash(populacao) 
+    
+    salva_resultados(f"populacoes/populacao_{hashAleatorio}", populacao)
+    
+    return hashAleatorio
+
+def carrega_populacao(hashPopulacao):
+    
+    return carrega_resultados(f"populacoes/populacao_{hashPopulacao}")

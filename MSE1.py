@@ -325,127 +325,6 @@ class MSE:
 
         return mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo
 
-    # Código com a geração de 2 números aleatórios, sempre gerando filhos diferentes dos pais
-
-    # def inicio(self, tamanhoPopulacao, numeroIteracoes, chanceCrossover, chanceMutacao, taxaElitismo):
-
-    #     populacao = self.cria_populacao_inicial(tamanhoPopulacao)
-
-    #     melhorIndividuo = None
-
-    #     mediasFitness = []
-    #     mediasMakespan = []
-    #     mediasLoadBalance = []
-
-    #     for iteracao in range(numeroIteracoes):
-
-    #         if iteracao == 0:
-    #             individuo = min(
-    #                 populacao, key=lambda individuo: self.fitness(individuo))
-    #             melhorIndividuo = {
-    #                 'individuo': individuo,
-    #                 'iteracao': iteracao + 1,
-    #                 'fitness': self.fitness(individuo),
-    #                 'makespan': self.makespan(individuo),
-    #                 'loadBalance': self.load_balance(individuo)
-    #             }
-
-    #         fitnessMedia = sum([self.fitness(individuo)
-    #                            for individuo in populacao]) / len(populacao)
-    #         mediasFitness.append(fitnessMedia)
-    #         # print(f'\nMédia fitness da população: {fitnessMedia:.7f}')
-
-    #         fitnessMediaMakespan = sum([self.makespan(individuo)
-    #                                     for individuo in populacao]) / len(populacao)
-    #         mediasMakespan.append(fitnessMediaMakespan)
-    #         # print(f'\nMédia makespan da população: {fitnessMediaMakespan:.7f}')
-
-    #         fitnessMediaLoadBalance = sum([self.load_balance(individuo)
-    #                                        for individuo in populacao]) / len(populacao)
-    #         mediasLoadBalance.append(fitnessMediaLoadBalance)
-    #         # print(f'\nMédia loadbalance da população: {fitnessMediaLoadBalance:.7f}')
-
-    #         individuo = min(
-    #             populacao, key=lambda individuo: self.fitness(individuo))
-
-    #         melhorIndividuoDaPopulacao = {
-    #             'individuo': individuo,
-    #             'iteracao': iteracao + 1,
-    #             'fitness': self.fitness(individuo),
-    #             'makespan': self.makespan(individuo),
-    #             'loadBalance': self.load_balance(individuo)
-    #         }
-
-    #         if (melhorIndividuoDaPopulacao['fitness'] < melhorIndividuo['fitness']):
-    #             melhorIndividuo = melhorIndividuoDaPopulacao
-
-    #         elite = self.elitismo(populacao, taxaElitismo)
-
-    #         novaPopulacao = []
-
-    #         if iteracao == numeroIteracoes - 1:
-    #             pass
-
-    #         while len(novaPopulacao) < tamanhoPopulacao - len(elite):
-
-    #             if iteracao == numeroIteracoes - 1:
-    #                 pass
-
-    #             pai1 = populacao[self.selecao_roleta(populacao)]
-
-    #             while pai1 in elite:
-    #                 pai1 = populacao[self.selecao_roleta(populacao)]
-
-    #             pai2 = populacao[self.selecao_roleta(populacao)]
-
-    #             while pai2 in elite:
-    #                 pai2 = populacao[self.selecao_roleta(populacao)]
-
-    #             while pai1 == pai2:
-    #                 pai2 = populacao[self.selecao_roleta(populacao)]
-
-    #             filhosAlocacao = [pai1['alocacao'], pai2['alocacao']]
-    #             filhosEscalonamento = [
-    #                 pai1['escalonamento'], pai2['escalonamento']]
-
-    #             if random() < chanceCrossover:
-    #                 filhosAlocacao = self.spx_alocacao(
-    #                     filhosAlocacao[0], filhosAlocacao[1])
-    #             else:
-    #                 filhosEscalonamento = self.spx_escalonamento(
-    #                     filhosEscalonamento[0], filhosEscalonamento[1])
-
-    #             if random() < chanceMutacao:
-    #                 filhosAlocacao[0] = self.pm(filhosAlocacao[0])
-    #                 filhosAlocacao[1] = self.pm(filhosAlocacao[1])
-    #             else:
-    #                 filhosEscalonamento[0] = self.stm(filhosEscalonamento[0])
-    #                 filhosEscalonamento[1] = self.stm(filhosEscalonamento[1])
-
-    #             filho1 = {
-    #                 'alocacao': filhosAlocacao[0],
-    #                 'escalonamento': filhosEscalonamento[0]
-    #             }
-
-    #             filho2 = {
-    #                 'alocacao': filhosAlocacao[1],
-    #                 'escalonamento': filhosEscalonamento[1]
-    #             }
-
-    #             if self.individuo_valido(filho1):
-    #                 novaPopulacao.append(filho1)
-    #             if self.individuo_valido(filho2) and len(novaPopulacao) < tamanhoPopulacao - len(elite):
-    #                 novaPopulacao.append(filho2)
-
-    #         # print(f'Iteração {iteracao + 1} concluída')
-
-    #         for individuo in elite:
-    #             novaPopulacao.append(individuo)
-
-    #         populacao = novaPopulacao.copy()
-
-    #     return mediasFitness, mediasMakespan, mediasLoadBalance, melhorIndividuo
-
     # Load balance "antigo"
     # def load_balance(self, individuo):
     #     tempoProcessadores = [0] * self.numeroProcessadores
@@ -461,6 +340,25 @@ class MSE:
     #     cargaMinima = min(tempoProcessadores)
 
     #     return cargaMaxima - cargaMinima
+
+    # Load balance "novo", inspirado no trabalho do Breno
+
+    def load_balance(self, individuo):
+        tempoProcessadores = [0] * self.numeroProcessadores
+
+        for indice, tarefa in enumerate(individuo["escalonamento"]):
+            processador = individuo["alocacao"][indice]
+            tempoExecucao = int(self.dic[tarefa]["tempos_execucao"][processador])
+
+            tempoProcessadores[processador] += tempoExecucao
+
+        tempoProcessamentoTotal = sum(tempoProcessadores)
+
+        tempoMedioProcessamento = tempoProcessamentoTotal / self.numeroProcessadores
+
+        makespan = individuo["makespan"]
+
+        return makespan / tempoMedioProcessamento
 
     def makespan(self, cromossomo):
         tempoProcessamento = [0] * self.numeroProcessadores
@@ -492,126 +390,8 @@ class MSE:
 
         return max(tempoProcessamento)
 
-
-    # Load balance "novo", inspirado no trabalho do Breno
-
-    def load_balance(self, individuo):
-        tempoProcessadores = [0] * self.numeroProcessadores
-
-        for indice, tarefa in enumerate(individuo["escalonamento"]):
-            processador = individuo["alocacao"][indice]
-            tempoExecucao = int(self.dic[tarefa]["tempos_execucao"][processador])
-
-            tempoProcessadores[processador] += tempoExecucao
-
-        tempoProcessamentoTotal = sum(tempoProcessadores)
-
-        tempoMedioProcessamento = tempoProcessamentoTotal / self.numeroProcessadores
-
-        makespan = individuo["makespan"]
-
-        return makespan / tempoMedioProcessamento
-
-
-    def flowtime(self, cromossomo):
-        finish_times = [0] * self.numeroTarefas
-
-        for indice, tarefa in enumerate(cromossomo["escalonamento"]):
-            processador = cromossomo["alocacao"][indice]
-            tempoExecucao = int(self.dic[tarefa]["tempos_execucao"][processador])
-
-            # Calculate communication delay
-            tempoComunicacaoAcc = 0
-            predecessores = self.dic[tarefa]["predecessores"]
-
-            for i, predecessor in enumerate(predecessores):
-                indicePredecessor = cromossomo["escalonamento"].index(predecessor)
-                processadorPredecessor = cromossomo["alocacao"][indicePredecessor]
-
-                if processadorPredecessor != processador:
-                    tempoComunicacao = int(self.dic[tarefa]["custos_comunicacao"][i])
-                    tempoComunicacaoAcc = max(
-                        tempoComunicacaoAcc,
-                        finish_times[indicePredecessor] + tempoComunicacao,
-                    )
-                else:
-                    tempoComunicacaoAcc = max(tempoComunicacaoAcc, finish_times[indicePredecessor])
-
-            finish_times[indice] = tempoExecucao + tempoComunicacaoAcc
-
-        return sum(finish_times)
-
-    def communication_cost(self, cromossomo):
-        total_communication_cost = 0
-
-        for indice, tarefa in enumerate(cromossomo["escalonamento"]):
-            processador = cromossomo["alocacao"][indice]
-            predecessores = self.dic[tarefa]["predecessores"]
-
-            for i, predecessor in enumerate(predecessores):
-                indicePredecessor = cromossomo["escalonamento"].index(predecessor)
-                processadorPredecessor = cromossomo["alocacao"][indicePredecessor]
-
-                if processadorPredecessor != processador:
-                    total_communication_cost += int(self.dic[tarefa]["custos_comunicacao"][i])
-
-        return total_communication_cost
-    
-    def waiting_time(self, individuo):
-        tempoEsperaTotal = 0
-        temposFinalizacao = [0] * self.numeroTarefas  # Armazena o tempo de finalização de cada tarefa.
-    
-        for indice, tarefa in enumerate(individuo["escalonamento"]):
-            processador = individuo["alocacao"][indice]
-            predecessores = self.dic[tarefa]["predecessores"]
-            tempoInicio = 0
-
-            # Calcula o maior tempo de término dos predecessores
-            for i, predecessor in enumerate(predecessores):
-                indicePredecessor = individuo["escalonamento"].index(predecessor)
-                processadorPredecessor = individuo["alocacao"][indicePredecessor]
-                tempoFinalizacaoPredecessor = temposFinalizacao[indicePredecessor]
-
-                # Inclui o custo de comunicação se os processadores forem diferentes
-                if processadorPredecessor != processador:
-                    tempoFinalizacaoPredecessor += int(
-                        self.dic[tarefa]["custos_comunicacao"][i]
-                    )
-
-                tempoInicio = max(tempoInicio, tempoFinalizacaoPredecessor)
-
-            # Calcula o tempo de finalização da tarefa
-            tempoExecucao = int(self.dic[tarefa]["tempos_execucao"][processador])
-            temposFinalizacao[indice] = tempoInicio + tempoExecucao
-
-            # O tempo de espera da tarefa é o tempo de início menos o tempo de término do último predecessor
-            tempoEspera = tempoInicio - max(
-                [temposFinalizacao[individuo["escalonamento"].index(pred)] for pred in predecessores],
-                default=0
-            )
-            tempoEsperaTotal += max(0, tempoEspera)
-
-        return tempoEsperaTotal
-
     def fitness(self, individuo):
         makespan = individuo["makespan"]
         loadBalance = individuo["loadBalance"]
 
         return self.alpha * makespan + (1 - self.alpha) * loadBalance
-
-
-## Implementei + 3 funcoes
-    ## flowtime
-    ## communication cost
-    ## waiting time
-
-    ## Experimento:
-    ## Gerar uma populacão de 1000 indivíduos
-    ## Avaliar cada um deles em relacao a cada função objetivo
-    ## Uma tabela com esses valores para cada indivíduo
-    ## Salvar os indivíduos
-    ## (+) Repetir essa avaliação na população final
-
-    ## Objetivo: cada função - quão discriminatória ela é?
-
-    ## Outro experimento: combinar as funções objetivo duas a duas.
