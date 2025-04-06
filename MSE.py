@@ -50,6 +50,12 @@ class MSE:
         cromossomo["makespan"] = self.makespan(cromossomo)
         cromossomo["loadBalance"] = self.load_balance(cromossomo)
         cromossomo["fitness"] = self.fitness(cromossomo)
+        
+        # Adicionando as novas funções
+        cromossomo["flowtime"] = self.flowtime(cromossomo)
+        cromossomo["communicationCost"] = self.communication_cost(cromossomo)
+        cromossomo["waitingTime"] = self.waiting_time(cromossomo)
+        
         return cromossomo
 
     def predecessores_alocados(self, cromossomo, predecessores):
@@ -213,7 +219,7 @@ class MSE:
         chanceCrossoverEscalonamento,
         chanceMutacaoAlocacao,
         chanceMutacaoEscalonamento,
-        taxaElitismo,
+        taxaElitismo
     ):
         populacao = self.cria_populacao_inicial(tamanhoPopulacao)
         self.taxaElitismo = taxaElitismo
@@ -599,6 +605,169 @@ class MSE:
 
         return self.alpha * makespan + (1 - self.alpha) * loadBalance
 
+    
+    def ag(self, populacao, novaPopulacao, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, tamanhoPopulacao, elite):
+        pai1 = populacao[self.selecao_roleta(populacao)]
+        pai2 = populacao[self.selecao_roleta(populacao)]
+
+        while pai1 == pai2:
+            pai2 = populacao[self.selecao_roleta(populacao)]
+
+        filhosAlocacao = []
+        filhosEscalonamento = []
+
+        if random() < chanceCrossoverAlocacao:
+            filhosAlocacao = self.spx_alocacao(
+                pai1["alocacao"], pai2["alocacao"]
+            )
+        else:
+            filhosAlocacao = [pai1["alocacao"], pai2["alocacao"]]
+
+        if random() < chanceCrossoverEscalonamento:
+            filhosEscalonamento = self.spx_escalonamento(
+                pai1["escalonamento"], pai2["escalonamento"]
+            )
+        else:
+            filhosEscalonamento = [pai1["escalonamento"], pai2["escalonamento"]]
+
+        if random() < chanceMutacaoAlocacao:
+            filhosAlocacao[0] = self.pm(filhosAlocacao[0])
+        if random() < chanceMutacaoAlocacao:
+            filhosAlocacao[1] = self.pm(filhosAlocacao[1])
+
+        if random() < chanceMutacaoEscalonamento:
+            filhosEscalonamento[0] = self.stm(filhosEscalonamento[0])
+        if random() < chanceMutacaoEscalonamento:
+            filhosEscalonamento[1] = self.stm(filhosEscalonamento[1])
+
+        filho1 = {
+            "alocacao": filhosAlocacao[0],
+            "escalonamento": filhosEscalonamento[0],
+        }
+        filho1["makespan"] = self.makespan(filho1)
+        filho1["loadBalance"] = self.load_balance(filho1)
+        filho1["fitness"] = self.fitness(filho1)
+        filho1["flowtime"] = self.flowtime(filho1)
+        filho1["communicationCost"] = self.communication_cost(filho1)
+        filho1["waitingTime"] = self.waiting_time(filho1)
+        filho2 = {
+            "alocacao": filhosAlocacao[1],
+            "escalonamento": filhosEscalonamento[1],
+        }
+        filho2["makespan"] = self.makespan(filho2)
+        filho2["loadBalance"] = self.load_balance(filho2)
+        filho2["fitness"] = self.fitness(filho2)
+        filho2["flowtime"] = self.flowtime(filho2)
+        filho2["communicationCost"] = self.communication_cost(filho2)
+        filho2["waitingTime"] = self.waiting_time(filho2)
+
+        if self.individuo_valido(filho1):
+            novaPopulacao.append(filho1)
+        if self.individuo_valido(filho2) and len(
+            novaPopulacao
+        ) < tamanhoPopulacao - len(elite):
+            novaPopulacao.append(filho2)
+            
+        return novaPopulacao
+    
+    ## Experimento com evolução da população e todas as métricas
+    def experimento_evolucao_populacao(self, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo, populacao, tamanhoPopulacao):
+        
+        # if tamanhoPopulacao is None and populacao is None:
+        #     raise ValueError("Você deve fornecer o tamanho da população ou a população inicial.")
+        
+        # populacao = populacao if populacao else self.cria_populacao_inicial(tamanhoPopulacao)
+        
+        self.taxaElitismo = taxaElitismo
+        mediasFitness = []
+        mediasMakespan = []
+        mediasLoadBalance = []
+        mediasFlowtime = []
+        mediasCommunicationCost = []
+        mediasWaitingTime = []
+        individuosPrimeiraIteracao = []
+        
+        for iteracao in range(numeroIteracoes):
+            
+            somaFitness = 0
+            somaMakespan = 0
+            somaLoadBalance = 0
+            somaFlowtime = 0
+            somaCommunicationCost = 0
+            somaWaitingTime = 0
+               
+            for individuo in populacao:
+                if iteracao == 0:
+                    individuosPrimeiraIteracao.append({
+                        "makespan": individuo["makespan"],
+                        "loadBalance": individuo["loadBalance"],
+                        "flowtime": individuo["flowtime"],
+                        "communicationCost": individuo["communicationCost"],
+                        "waitingTime": individuo["waitingTime"],
+                        "fitness": individuo["fitness"],
+                        "alocacao": individuo["alocacao"],
+                        "escalonamento": individuo["escalonamento"]
+                    })
+                    
+                somaFitness += individuo["fitness"]
+                somaMakespan += individuo["makespan"]
+                somaLoadBalance += individuo["loadBalance"]
+                somaFlowtime += individuo["flowtime"]
+                somaCommunicationCost += individuo["communicationCost"]
+                somaWaitingTime += individuo["waitingTime"]
+                
+            fitnessMedia = somaFitness / tamanhoPopulacao
+            mediasFitness.append(fitnessMedia)
+            
+            makespanMedia = somaMakespan / tamanhoPopulacao
+            mediasMakespan.append(makespanMedia)
+            
+            loadBalanceMedia = somaLoadBalance / tamanhoPopulacao
+            mediasLoadBalance.append(loadBalanceMedia)
+            
+            flowtimeMedia = somaFlowtime / tamanhoPopulacao
+            mediasFlowtime.append(flowtimeMedia)
+            
+            communicationCostMedia = somaCommunicationCost / tamanhoPopulacao
+            mediasCommunicationCost.append(communicationCostMedia)
+            
+            waitingTimeMedia = somaWaitingTime / tamanhoPopulacao
+            mediasWaitingTime.append(waitingTimeMedia)
+                    
+            elite = self.elitismo(populacao)
+            novaPopulacao = []
+            
+            while len(novaPopulacao) < tamanhoPopulacao - len(elite):
+                novaPopulacao = self.ag(populacao, novaPopulacao, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, tamanhoPopulacao, elite)
+                
+            novaPopulacao.extend(elite)
+            shuffle(novaPopulacao)
+            populacao = novaPopulacao.copy()
+            
+        individuosUltimaIteracao = []
+        
+        for individuo in populacao:
+            individuosUltimaIteracao.append({
+                "makespan": individuo["makespan"],
+                "loadBalance": individuo["loadBalance"],
+                "flowtime": individuo["flowtime"],
+                "communicationCost": individuo["communicationCost"],
+                "waitingTime": individuo["waitingTime"],
+                "fitness": individuo["fitness"],
+                "alocacao": individuo["alocacao"],
+                "escalonamento": individuo["escalonamento"]
+            })
+            
+        return {
+            "primeiraIteracao": individuosPrimeiraIteracao,
+            "ultimaIteracao": individuosUltimaIteracao,
+            "mediasFitness": mediasFitness,
+            "mediasMakespan": mediasMakespan,
+            "mediasLoadBalance": mediasLoadBalance,
+            "mediasFlowtime": mediasFlowtime,
+            "mediasCommunicationCost": mediasCommunicationCost,
+            "mediasWaitingTime": mediasWaitingTime            
+        }
 
 ## Implementei + 3 funcoes
     ## flowtime
@@ -615,3 +784,7 @@ class MSE:
     ## Objetivo: cada função - quão discriminatória ela é?
 
     ## Outro experimento: combinar as funções objetivo duas a duas.
+    
+    
+
+
