@@ -2,7 +2,6 @@ __pycache__/
 grafos/
 /teste.py
 grafos_breno/
-grafos_gerados_dos_reais/
 venv/
 resultados/*.csv
 resultados/*.txt
