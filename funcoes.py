@@ -76,17 +76,17 @@ def ler_arquivo_ghe(nomeArquivo, numProcessadores):
                 # print(json.dumps(linha_formatada, indent=4))
 
                 predecessores = []
-                for predecessor in linha_formatada[numProcessadores + 2 :: 2]:
+                for predecessor in linha_formatada[numProcessadores + 2:: 2]:
                     predecessores.append(predecessor)
 
                 custosComunicacao = []
-                for custoComunicacao in linha_formatada[numProcessadores + 3 :: 2]:
+                for custoComunicacao in linha_formatada[numProcessadores + 3:: 2]:
                     custosComunicacao.append(custoComunicacao)
 
                 dicionarioTarefas[linha_formatada[0]] = {
                     "tarefa": linha_formatada[0],
                     "tempos_execucao": copy.deepcopy(
-                        linha_formatada[1 : numProcessadores + 1]
+                        linha_formatada[1: numProcessadores + 1]
                     ),
                     "num_predecessores": copy.deepcopy(
                         linha_formatada[numProcessadores + 1]
@@ -157,8 +157,10 @@ def selecaoIndividuos(
                 individuosSorteados.append(individuo2)
                 break
 
-        fitness1 = fitness(individuo1, dicionarioTarefas, numProcessadores, numTarefas)
-        fitness2 = fitness(individuo2, dicionarioTarefas, numProcessadores, numTarefas)
+        fitness1 = fitness(individuo1, dicionarioTarefas,
+                           numProcessadores, numTarefas)
+        fitness2 = fitness(individuo2, dicionarioTarefas,
+                           numProcessadores, numTarefas)
 
         if fitness1 < fitness2:
             individuosSelecionados.append(individuo1)
@@ -482,7 +484,8 @@ def compare_algorithms2(data):
         for task in tasks:
             for graph in graphs:
                 if graph in data[alg1][task]:
-                    alg1_makespan_values.append(data[alg1][task][graph]["makespan"])
+                    alg1_makespan_values.append(
+                        data[alg1][task][graph]["makespan"])
                     alg1_loadBalance_values.append(
                         data[alg1][task][graph]["loadBalance"]
                     )
@@ -557,7 +560,8 @@ def salva_dataframe_em_txt(df, filename):
 def converte_grafos_reais_gho_em_ghe():
     basePath = "grafos_reais/"
 
-    listaArquivos = [f"{basePath}robot", f"{basePath}sparse", f"{basePath}fpppp"]
+    listaArquivos = [f"{basePath}robot",
+                     f"{basePath}sparse", f"{basePath}fpppp"]
 
     for arquivo in listaArquivos:
 
@@ -584,45 +588,49 @@ def converte_grafos_reais_gho_em_ghe():
                         numTarefas,
                     )
 
+
 def makespan(tarefas, numeroProcessadores, dic):
     tempoProcessamento = [0] * numeroProcessadores
-    
+
     for tarefa in tarefas:
         processador = tarefa['processorId']
         tarefaId = str(tarefa['taskId'])
-        
+
         tempoCominicacaoAcc = 0
-        
+
         predecessores = tarefa['predecessores']
-        
+
         if len(predecessores) > 0:
             for i, predecessor in enumerate(predecessores):
                 predecessorId = predecessor['taskId']
                 processadorPredecessor = predecessor['processorId']
-                
+
                 if processadorPredecessor != processador:
-                    tempoComunicacao = int(dic[tarefaId]['custos_comunicacao'][i])
-                    
+                    tempoComunicacao = int(
+                        dic[tarefaId]['custos_comunicacao'][i])
+
                     tempoCominicacaoAcc += tempoComunicacao
-        
-        tempoProcessamento[processador] += (int(dic[tarefaId]['tempos_execucao'][processador]) + tempoCominicacaoAcc)
-        
+
+        tempoProcessamento[processador] += (
+            int(dic[tarefaId]['tempos_execucao'][processador]) + tempoCominicacaoAcc)
+
     return max(tempoProcessamento)
+
 
 def load_balance(tarefas, numeroProcessadores, dic, makespanValue):
     tempoProcessadores = [0] * numeroProcessadores
-    
+
     for tarefa in tarefas:
         tarefaId = str(tarefa['taskId'])
         processador = tarefa['processorId']
         tempoExecucao = int(dic[tarefaId]['tempos_execucao'][processador])
-        
+
         tempoProcessadores[processador] += tempoExecucao
-    
+
     tempoProcessamentoTotal = sum(tempoProcessadores)
-    
+
     tempoMedioProcessamento = tempoProcessamentoTotal / numeroProcessadores
-    
+
     return makespanValue / tempoMedioProcessamento
 
 
@@ -635,22 +643,23 @@ def gera_hash(objeto):
 
 
 def gera_populacao_inicial(dic, numTarefas, numProcessadores, tamanhoPopulacao):
-    
+
     mse = MSE(dic, numTarefas, numProcessadores)
-    
+
     populacao = mse.cria_populacao_inicial(tamanhoPopulacao)
-    
+
     return populacao
-    
+
 
 def salva_populacao(populacao):
-    
-    hashAleatorio = gera_hash(populacao) 
-    
-    salva_resultados(f"populacoes/populacao_{hashAleatorio}", populacao)
-    
+
+    hashAleatorio = gera_hash(populacao)
+
+    salva_resultados(f"populacoes/populacao_{hashAleatorio}.pkl", populacao)
+
     return hashAleatorio
 
+
 def carrega_populacao(hashPopulacao):
-    
-    return carrega_resultados(f"populacoes/populacao_{hashPopulacao}")
+
+    return carrega_resultados(f"populacoes/populacao_{hashPopulacao}.pkl")

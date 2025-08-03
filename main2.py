@@ -36,10 +36,29 @@ def salva(parametros):
             dic, numTarefas, numProcessadores, tamanhoPopulacao
         )
         hashPopulacao = salva_populacao(populacao)
+        # salvar_populacao_csv(populacao, f"populacao_{hashPopulacao}.csv")
         return hashPopulacao
     except:
         print("Erro ao salvar")
         return False
+
+
+def salvar_populacao_csv(populacao, nome_arquivo):
+    dados = []
+    for i, individuo in enumerate(populacao):
+        dados.append({
+            "Individuo": i,
+            "Makespan": individuo.get("makespan"),
+            "LoadBalance": individuo.get("loadBalance"),
+            "Flowtime": individuo.get("flowtime"),
+            "CommunicationCost": individuo.get("communicationCost"),
+            "WaitingTime": individuo.get("waitingTime"),
+            "Fitness": individuo.get("fitness"),
+            "Alocacao": individuo.get("alocacao"),
+            "Escalonamento": individuo.get("escalonamento"),
+        })
+    df = pd.DataFrame(dados)
+    df.to_csv(nome_arquivo, index=False)
 
 
 def carrega(hashPopulacao):
@@ -61,15 +80,9 @@ def experimento(
     numProcessadores=None,
 ):
     resultados = {}
+    hashes_ultima_iteracao = []
 
     for alpha in listaAlphas:
-        resultados["alpha"] = {}
-        resultados["alpha"]["makespan"] = []
-        resultados["alpha"]["loadBalance"] = []
-        resultados["alpha"]["iteracao"] = []
-        resultados["alpha"]["flowtime"] = []
-        resultados["alpha"]["communicationCost"] = []
-        resultados["alpha"]["waitingTime"] = []
 
         mse = MSE(dic, numTarefas, numProcessadores, float(alpha))
 
@@ -86,13 +99,20 @@ def experimento(
 
         parametrosMSE["alpha"] = alpha
 
-        salva_resultados(
+        hashPrimeiraIteracao, hashUltimaIteracao = salva_resultados(
             resultadosExperimento["primeiraIteracao"],
             resultadosExperimento["ultimaIteracao"],
             parametrosMSE,
             hashPopulacao,
             alpha,
         )
+
+        # Coleta o hash da última iteração para este alpha
+        if hashUltimaIteracao:
+            hashes_ultima_iteracao.append(
+                f"Alpha {alpha}: {hashUltimaIteracao}")
+
+    return hashes_ultima_iteracao
 
 
 def salva_resultados(
@@ -162,7 +182,7 @@ def salva_resultados(
         dfPrimeiraIteracao.reset_index(drop=True, inplace=True)
 
         dfUltimaIteracao = pd.DataFrame.from_dict(dicUltimaIteracao, columns=colunasIndividuos, orient="index"
-        )
+                                                  )
         dfUltimaIteracao.reset_index(drop=True, inplace=True)
 
         paramentrosMSEAux = []
@@ -181,7 +201,8 @@ def salva_resultados(
         dfResultadosPrimeiraIteracao = pd.concat(
             [dfParametros, dfPrimeiraIteracao], axis=1
         )
-        dfResultadosUltimaIteracao = pd.concat([dfParametros, dfUltimaIteracao], axis=1)
+        dfResultadosUltimaIteracao = pd.concat(
+            [dfParametros, dfUltimaIteracao], axis=1)
 
         os.makedirs(f"{pastaResultados}/{hashPopulacao}", exist_ok=True)
 
@@ -196,13 +217,12 @@ def salva_resultados(
 
         print(f"Resultados salvos em {hashPopulacao}")
 
-        hashPrimeiraIteracao = salva_populacao(individuosPrimeiraIteracao)
+        # Salva apenas a população da última iteração (a primeira é redundante)
         hashUltimaIteracao = salva_populacao(individuosUltimaIteracao)
 
-        print(f"Hash da primeira iteração: {hashPrimeiraIteracao}")
         print(f"Hash da ultima iteração: {hashUltimaIteracao}")
 
-        return hashPrimeiraIteracao, hashUltimaIteracao
+        return None, hashUltimaIteracao
     except Exception as e:
         print("Erro ao salvar resultados")
         return False
@@ -214,7 +234,7 @@ def main():
         "tamanhoPopulacao": 4,
         "grafo": "grafos_experimento/robot-4-20-30.stg",
     }
-    
+
     while True:
 
         opcao = input("Escolha a opção (1 - salvar, 2 - carregar): ")
@@ -249,7 +269,8 @@ def main():
 
             numeroTarefas = ler_numero_tarefas(parametrosPopulacao["grafo"])
             numProcessadores = int(parametrosPopulacao["grafo"].split("-")[1])
-            dic = ler_arquivo_ghe(parametrosPopulacao["grafo"], numProcessadores)
+            dic = ler_arquivo_ghe(
+                parametrosPopulacao["grafo"], numProcessadores)
 
             experimento(
                 listaAlphas,
@@ -260,7 +281,6 @@ def main():
                 parametrosPopulacao["hashPopulacao"],
                 numProcessadores,
             )
-
 
 
 if __name__ == "__main__":
