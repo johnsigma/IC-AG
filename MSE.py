@@ -140,8 +140,8 @@ class MSE:
                 for predecessor in predecessores:
                     indice_predecessor = escalonamento.index(predecessor)
                     if indice_predecessor >= indice:
-                        print(
-                            f"Individuo inválido: predecessor {predecessor} da tarefa {tarefa} aparece depois dela no escalonamento")
+                        # print(
+                        #     f"Individuo inválido: predecessor {predecessor} da tarefa {tarefa} aparece depois dela no escalonamento")
                         return False
 
             return True

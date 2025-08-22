@@ -3,8 +3,8 @@ grafos/
 /teste.py
 grafos_breno/
 venv/
-resultados/*.csv
-resultados/*.txt
+resultados/*
+!resultados/.gitkeep
 populacoes/*
 !populacoes/.gitkeep
 resultados2/*
