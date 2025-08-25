@@ -234,6 +234,7 @@ class MainGUI:
             messagebox.showinfo(
                 "Iniciando Experimento", "O experimento será executado. Isso pode levar algum tempo.")
 
+            # A função 'experimento' agora salva resultados em subpastas por execução: resultados2/<hash>/<runId>/
             hashes_ultima_iteracao = experimento(
                 lista_alphas,
                 dic,

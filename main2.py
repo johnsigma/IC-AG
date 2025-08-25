@@ -3,6 +3,7 @@ import random
 from sys import argv
 from time import time
 from uuid import uuid4
+from datetime import datetime
 import pandas as pd
 import numpy as np
 from funcoes import (
@@ -78,9 +79,28 @@ def experimento(
     populacao,
     hashPopulacao,
     numProcessadores=None,
+    pastaResultados: str = "resultados2",
+    runId: str | None = None,
 ):
     resultados = {}
     hashes_ultima_iteracao = []
+    # Gera runId uma unica vez por execucao (se nao fornecido)
+    if runId is None:
+        base_hash_dir = os.path.join(pastaResultados, hashPopulacao)
+        os.makedirs(base_hash_dir, exist_ok=True)
+        existentes = [
+            d for d in os.listdir(base_hash_dir)
+            if os.path.isdir(os.path.join(base_hash_dir, d)) and d.startswith("run_")
+        ]
+        max_n = 0
+        for d in existentes:
+            try:
+                n = int(d.split("run_")[-1])
+                if n > max_n:
+                    max_n = n
+            except Exception:
+                continue
+        runId = f"run_{max_n + 1:03d}"
 
     for alpha in listaAlphas:
 
@@ -105,6 +125,8 @@ def experimento(
             parametrosMSE,
             hashPopulacao,
             alpha,
+            pastaResultados,
+            runId,
         )
 
         # Coleta o hash da última iteração para este alpha
@@ -121,14 +143,31 @@ def salva_resultados(
     parametrosMSE,
     hashPopulacao,
     alpha,
+    pastaResultados: str = "resultados2",
+    runId: str | None = None,
 ):
     try:
-
-        pastaResultados = "resultados2"
+        # Define subpasta por execução para não sobrescrever resultados anteriores
+        base_hash_dir = os.path.join(pastaResultados, hashPopulacao)
+        os.makedirs(base_hash_dir, exist_ok=True)
+        if not runId:
+            # Gera um identificador incremental: run_001, run_002, ...
+            existentes = [
+                d for d in os.listdir(base_hash_dir)
+                if os.path.isdir(os.path.join(base_hash_dir, d)) and d.startswith("run_")
+            ]
+            max_n = 0
+            for d in existentes:
+                try:
+                    n = int(d.split("run_")[-1])
+                    if n > max_n:
+                        max_n = n
+                except Exception:
+                    continue
+            runId = f"run_{max_n + 1:03d}"
 
         dicPrimeiraIteracao = {}
         dicUltimaIteracao = {}
-        # dicEscalonamento = {}
 
         for i, _ in enumerate(individuosUltimaIteracao):
             individuoPrimeiraIteracao = individuosPrimeiraIteracao[i]
@@ -158,12 +197,6 @@ def salva_resultados(
                 "Escalonamento": individuoUltimaIteracao["escalonamento"],
             }
 
-            # dicEscalonamento[str(i)] = {
-            #     "Individuo": str(i),
-            #     "Alocacao": individuoUltimaIteracao["alocacao"],
-            #     "Escalonamento": individuoUltimaIteracao["escalonamento"],
-            # }
-
         colunasIndividuos = [
             "Individuo",
             "Makespan",
@@ -181,18 +214,14 @@ def salva_resultados(
         )
         dfPrimeiraIteracao.reset_index(drop=True, inplace=True)
 
-        dfUltimaIteracao = pd.DataFrame.from_dict(dicUltimaIteracao, columns=colunasIndividuos, orient="index"
-                                                  )
+        dfUltimaIteracao = pd.DataFrame.from_dict(
+            dicUltimaIteracao, columns=colunasIndividuos, orient="index"
+        )
         dfUltimaIteracao.reset_index(drop=True, inplace=True)
 
         paramentrosMSEAux = []
         for param, value in parametrosMSE.items():
-            paramentrosMSEAux.append(
-                {
-                    "Parametro": param,
-                    "Valor": value,
-                }
-            )
+            paramentrosMSEAux.append({"Parametro": param, "Valor": value})
 
         dfParametros = pd.DataFrame(paramentrosMSEAux)
         dfParametros[""] = None
@@ -202,28 +231,29 @@ def salva_resultados(
             [dfParametros, dfPrimeiraIteracao], axis=1
         )
         dfResultadosUltimaIteracao = pd.concat(
-            [dfParametros, dfUltimaIteracao], axis=1)
+            [dfParametros, dfUltimaIteracao], axis=1
+        )
 
-        os.makedirs(f"{pastaResultados}/{hashPopulacao}", exist_ok=True)
+        # Cria subpasta por execução: resultados2/<hash>/<runId>/
+        pasta_execucao = os.path.join(base_hash_dir, runId)
+        os.makedirs(pasta_execucao, exist_ok=True)
 
         dfResultadosPrimeiraIteracao.to_csv(
-            f"{pastaResultados}/{hashPopulacao}/primeira_iteracao_{alpha}.csv",
+            os.path.join(pasta_execucao, f"primeira_iteracao_{alpha}.csv"),
             index=False,
         )
         dfResultadosUltimaIteracao.to_csv(
-            f"{pastaResultados}/{hashPopulacao}/ultima_iteracao_{alpha}.csv",
+            os.path.join(pasta_execucao, f"ultima_iteracao_{alpha}.csv"),
             index=False,
         )
 
-        print(f"Resultados salvos em {hashPopulacao}")
+        print(f"Resultados salvos em {hashPopulacao}/{runId}")
 
         # Salva apenas a população da última iteração (a primeira é redundante)
         hashUltimaIteracao = salva_populacao(individuosUltimaIteracao)
 
-        print(f"Hash da ultima iteração: {hashUltimaIteracao}")
-
         return None, hashUltimaIteracao
-    except Exception as e:
+    except Exception:
         print("Erro ao salvar resultados")
         return False
 
@@ -231,7 +261,7 @@ def salva_resultados(
 def main():
 
     parametrosPopulacao = {
-        "tamanhoPopulacao": 4,
+        "tamanhoPopulacao": 10,
         "grafo": "grafos_experimento/robot-4-20-30.stg",
     }
 
@@ -249,7 +279,7 @@ def main():
             parametrosPopulacao["hashPopulacao"] = hashPopulacao
 
             parametrosMSE = {
-                "numeroIteracoes": 3,
+                "numeroIteracoes": 10,
                 "chanceCrossoverAlocacao": 0.4,
                 "chanceCrossoverEscalonamento": 0.4,
                 "chanceMutacaoAlocacao": 0.2,
@@ -265,14 +295,14 @@ def main():
                 print("Hash da população não confere")
                 return False
 
-            listaAlphas = ["0", "0.25", "0.5", "0.75", "1"]
+            listaAlphas = ["0.5"]
 
             numeroTarefas = ler_numero_tarefas(parametrosPopulacao["grafo"])
             numProcessadores = int(parametrosPopulacao["grafo"].split("-")[1])
             dic = ler_arquivo_ghe(
                 parametrosPopulacao["grafo"], numProcessadores)
 
-            experimento(
+            hashsPopulacao = experimento(
                 listaAlphas,
                 dic,
                 parametrosMSE,
@@ -281,6 +311,11 @@ def main():
                 parametrosPopulacao["hashPopulacao"],
                 numProcessadores,
             )
+
+            print("Experimento concluído com sucesso!")
+            print("Hashs das últimas iterações:")
+            for hashStr in hashsPopulacao:
+                print(hashStr)
 
 
 if __name__ == "__main__":

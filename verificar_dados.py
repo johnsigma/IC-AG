@@ -3,6 +3,7 @@ import pickle
 import ast
 from funcoes import carrega_populacao
 
+
 def comparar_fontes_dados():
     """
     Compara o escalonamento do primeiro indivíduo de um arquivo .pkl e de um .csv.
@@ -19,12 +20,14 @@ def comparar_fontes_dados():
         if not populacao_pkl:
             print(f"Não foi possível carregar o arquivo PKL: {caminho_pkl}")
             return
-            
+
         # O escalonamento no pkl já é uma lista de inteiros
         escalonamento_pkl = populacao_pkl[0]['escalonamento']
-        print(f"Escalonamento do Indivíduo 0 (do arquivo PKL):\n{escalonamento_pkl}\n")
+        print(
+            f"Escalonamento do Indivíduo 0 (do arquivo PKL):\n{escalonamento_pkl}\n")
     except Exception as e:
-        print(f"Erro ao carregar ou processar o arquivo PKL '{caminho_pkl}': {e}")
+        print(
+            f"Erro ao carregar ou processar o arquivo PKL '{caminho_pkl}': {e}")
         return
 
     # --- Carregar dados do arquivo .csv ---
@@ -33,10 +36,13 @@ def comparar_fontes_dados():
         # A coluna 'Escalonamento' no CSV é uma string de uma lista de strings
         escalonamento_str_csv = df_csv.loc[0, 'Escalonamento']
         # Convertendo para lista de inteiros
-        escalonamento_csv = [int(i) for i in ast.literal_eval(escalonamento_str_csv)]
-        print(f"Escalonamento do Indivíduo 0 (do arquivo CSV 'primeira_iteracao'):\n{escalonamento_csv}\n")
+        escalonamento_csv = [int(i)
+                             for i in ast.literal_eval(escalonamento_str_csv)]
+        print(
+            f"Escalonamento do Indivíduo 0 (do arquivo CSV 'primeira_iteracao'):\n{escalonamento_csv}\n")
     except Exception as e:
-        print(f"Erro ao carregar ou processar o arquivo CSV '{caminho_csv}': {e}")
+        print(
+            f"Erro ao carregar ou processar o arquivo CSV '{caminho_csv}': {e}")
         return
 
     # --- Comparação ---
@@ -46,6 +52,7 @@ def comparar_fontes_dados():
     else:
         print("--- CONCLUSÃO: Os escalonamentos são DIFERENTES. ---")
         print("A população no arquivo .pkl não corresponde à população no CSV da primeira iteração.")
+
 
 if __name__ == '__main__':
     comparar_fontes_dados()

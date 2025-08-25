@@ -413,7 +413,7 @@ def salva_resultados(enderecoArquivo, dicionarioResultados):
     with open(enderecoArquivo, "wb") as f:
         pickle.dump(dicionarioResultados, f)
 
-    print("Resultados salvos com sucesso")
+    print("População salva com sucesso")
 
 
 def carrega_resultados(enderecoArquivo):
