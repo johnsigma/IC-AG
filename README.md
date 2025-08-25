@@ -77,13 +77,12 @@ Subcomando `carregar`:
 
 - `--hash <str>` (obrigatório): identificador (hash) da população previamente salva que será carregada do disco.
 - `--grafo <caminho.stg>`: caminho do arquivo de grafo (.stg) correspondente ao experimento. Se omitido, usa o padrão definido no código.
-- `--tamanho-populacao <int>`: tamanho da população usado no experimento. Se omitido, o CLI detecta automaticamente o tamanho a partir do arquivo salvo (PKL) carregado.
 - `--iteracoes <int>`: número de iterações da evolução (ciclos do AG).
 - `--alpha <float>[,<float>...]` (repetível): um ou mais valores de alpha a serem testados. Pode repetir a opção (`--alpha 0.5 --alpha 0.7`) ou passar como lista separada por vírgula (`--alpha 0.5,0.7`).
-- `--cx-alloc <float>`: probabilidade de crossover na etapa de alocação (intervalo esperado: 0.0 a 1.0).
-- `--cx-sched <float>`: probabilidade de crossover na etapa de escalonamento (0.0 a 1.0).
-- `--mut-alloc <float>`: probabilidade de mutação na etapa de alocação (0.0 a 1.0).
-- `--mut-sched <float>`: probabilidade de mutação na etapa de escalonamento (0.0 a 1.0).
+- `--cx-alloc <float>`: probabilidade de crossover no vetor de alocação (intervalo esperado: 0.0 a 1.0).
+- `--cx-sched <float>`: probabilidade de crossover no vetor de escalonamento (0.0 a 1.0).
+- `--mut-alloc <float>`: probabilidade de mutação no vetor de alocação (0.0 a 1.0).
+- `--mut-sched <float>`: probabilidade de mutação no vetor de escalonamento (0.0 a 1.0).
 - `--elitismo <float>`: taxa de elitismo aplicada a cada iteração (0.0 a 1.0).
 - `--pasta-resultados <caminho>`: diretório base para salvar os CSVs. A estrutura final fica `<base>/<hash>/run_XXX/`, com `run_001`, `run_002`, ... gerados automaticamente por execução.
 
@@ -93,11 +92,11 @@ Subcomando `salvar-executar`:
 - `--tamanho-populacao <int>`: tamanho da população inicial; se omitido, usa o padrão. Na execução, se omitido, pode ser inferido do PKL salvo.
 - `--iteracoes <int>`: número de iterações.
 - `--alpha <float>[,<float>...]`: valores de alpha (mesmas regras do subcomando `carregar`).
-- `--cx-alloc <float>`: probabilidade de crossover de alocação.
-- `--cx-sched <float>`: probabilidade de crossover de escalonamento.
-- `--mut-alloc <float>`: probabilidade de mutação de alocação.
-- `--mut-sched <float>`: probabilidade de mutação de escalonamento.
-- `--elitismo <float>`: taxa de elitismo.
+- `--cx-alloc <float>`: probabilidade de crossover no vetor de alocação (intervalo esperado: 0.0 a 1.0).
+- `--cx-sched <float>`: probabilidade de crossover no vetor de escalonamento (0.0 a 1.0).
+- `--mut-alloc <float>`: probabilidade de mutação no vetor de alocação (0.0 a 1.0).
+- `--mut-sched <float>`: probabilidade de mutação no vetor de escalonamento (0.0 a 1.0).
+- `--elitismo <float>`: taxa de elitismo aplicada a cada iteração (0.0 a 1.0).
 - `--pasta-resultados <caminho>`: diretório base de resultados. Os arquivos são gravados em `<base>/<hash>/run_XXX/` para evitar sobrescritas entre execuções.
 
 ### Estrutura de resultados e versionamento
