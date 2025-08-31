@@ -48,12 +48,10 @@ class MSE:
 
         cromossomo["makespan"] = self.makespan(cromossomo)
         cromossomo["loadBalance"] = self.load_balance(cromossomo)
-        cromossomo["fitness"] = self.fitness(cromossomo)
-
-        # Adicionando as novas funções
         cromossomo["flowtime"] = self.flowtime(cromossomo)
         cromossomo["communicationCost"] = self.communication_cost(cromossomo)
         cromossomo["waitingTime"] = self.waiting_time(cromossomo)
+        cromossomo["fitness"] = self.fitness(cromossomo)
 
         return cromossomo
 
@@ -306,6 +304,9 @@ class MSE:
                 "fitness": individuo["fitness"],
                 "makespan": individuo["makespan"],
                 "loadBalance": individuo["loadBalance"],
+                "flowtime": individuo["flowtime"],
+                "communicationCost": individuo["communicationCost"],
+                "waitingTime": individuo["waitingTime"],
             }
 
             if melhorIndividuoDaPopulacao["fitness"] < melhorIndividuo["fitness"]:
@@ -358,8 +359,12 @@ class MSE:
                     "alocacao": filhosAlocacao[0],
                     "escalonamento": filhosEscalonamento[0],
                 }
+                # Calcula métricas antes do fitness
                 filho1["makespan"] = self.makespan(filho1)
                 filho1["loadBalance"] = self.load_balance(filho1)
+                filho1["flowtime"] = self.flowtime(filho1)
+                filho1["communicationCost"] = self.communication_cost(filho1)
+                filho1["waitingTime"] = self.waiting_time(filho1)
                 filho1["fitness"] = self.fitness(filho1)
                 filho2 = {
                     "alocacao": filhosAlocacao[1],
@@ -367,6 +372,9 @@ class MSE:
                 }
                 filho2["makespan"] = self.makespan(filho2)
                 filho2["loadBalance"] = self.load_balance(filho2)
+                filho2["flowtime"] = self.flowtime(filho2)
+                filho2["communicationCost"] = self.communication_cost(filho2)
+                filho2["waitingTime"] = self.waiting_time(filho2)
                 filho2["fitness"] = self.fitness(filho2)
 
                 if self.individuo_valido(filho1):
@@ -667,8 +675,13 @@ class MSE:
     def fitness(self, individuo):
         makespan = individuo["makespan"]
         loadBalance = individuo["loadBalance"]
+        flowtime = individuo["flowtime"]
+        waitingTime = individuo["waitingTime"]
+        communicationCost = individuo["communicationCost"]
 
         return self.alpha * makespan + (1 - self.alpha) * loadBalance
+
+        # return self.alpha * makespan + (1 - self.alpha) * communicationCost
 
     # def ag(self, populacao, novaPopulacao, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, tamanhoPopulacao, elite):
     #     pai1 = populacao[self.selecao_roleta(populacao)]
@@ -737,6 +750,7 @@ class MSE:
     #     return novaPopulacao
 
     # Experimento com evolução da população e todas as métricas
+
     def experimento_evolucao_populacao(self, numeroIteracoes, chanceCrossoverAlocacao, chanceCrossoverEscalonamento, chanceMutacaoAlocacao, chanceMutacaoEscalonamento, taxaElitismo, populacao, tamanhoPopulacao):
         try:
             self.taxaElitismo = taxaElitismo
@@ -840,22 +854,22 @@ class MSE:
                     }
                     filho1["makespan"] = self.makespan(filho1)
                     filho1["loadBalance"] = self.load_balance(filho1)
-                    filho1["fitness"] = self.fitness(filho1)
                     filho1["flowtime"] = self.flowtime(filho1)
                     filho1["communicationCost"] = self.communication_cost(
                         filho1)
                     filho1["waitingTime"] = self.waiting_time(filho1)
+                    filho1["fitness"] = self.fitness(filho1)
                     filho2 = {
                         "alocacao": filhosAlocacao[1],
                         "escalonamento": filhosEscalonamento[1],
                     }
                     filho2["makespan"] = self.makespan(filho2)
                     filho2["loadBalance"] = self.load_balance(filho2)
-                    filho2["fitness"] = self.fitness(filho2)
                     filho2["flowtime"] = self.flowtime(filho2)
                     filho2["communicationCost"] = self.communication_cost(
                         filho2)
                     filho2["waitingTime"] = self.waiting_time(filho2)
+                    filho2["fitness"] = self.fitness(filho2)
 
                     if self.individuo_valido(filho1):
                         novaPopulacao.append(filho1)
