@@ -1,5 +1,53 @@
-# IC-AG
-Trabalho sobre Algoritmo Genético para a Disciplina de Projeto de Graduação 2
+# IC-AG: algoritmo genético para escalonamento de tarefas
+
+Código do Trabalho de Conclusão de Curso **"Algoritmo genético para escalonamento de tarefas em ambientes paralelos heterogêneos"** (Ciência da Computação, Universidade Federal de Uberlândia, 2024), de John Vítor da Silva Cunha, com orientação do Prof. Paulo Henrique Ribeiro Gabriel.
+
+- Monografia: https://repositorio.ufu.br/handle/123456789/44002
+- Branch com o código do TCC: `tcc`
+
+## O que é
+
+Um algoritmo genético em Python que escalona tarefas de grafos de dependência (DAGs) em multiprocessadores heterogêneos, com custo de comunicação entre processadores. A aptidão combina **makespan** e **balanceamento de carga** (*load balance*), ponderados por um parâmetro `alpha`.
+
+O trabalho compara o algoritmo genético com quatro algoritmos determinísticos (HEFT, CPOP, IHEFT e IPEFT) em três aplicações reais (`robot`, `sparse` e `fpppp`). Os resultados e a discussão estão na monografia.
+
+Depois da entrega do TCC, o projeto foi estendido a pedido do orientador com:
+
+- um segundo experimento, que compara a primeira população com a última;
+- carga e gravação de populações iniciais, para repetir experimentos sobre a mesma população;
+- uma interface gráfica e uma linha de comando (CLI) com semente aleatória, para execuções reproduzíveis.
+
+## Estrutura
+
+| Arquivo ou pasta | Função |
+| --- | --- |
+| `MSE.py` | Algoritmo genético (classe `MSE`): população, seleção, cruzamento, mutação, elitismo e aptidão |
+| `funcoes.py` | Leitura de grafos, operadores, métricas (makespan, load balance) e gravação de populações e resultados |
+| `main.py` | Primeiro experimento: algoritmo genético contra os algoritmos determinísticos (com janela de parâmetros) |
+| `main2.py`, `main2_gui.py`, `main2_cli.py` | Segundo experimento, comparando primeira e última população (código, interface gráfica e CLI) |
+| `task_scheduling.py` | Implementação dos algoritmos determinísticos de comparação (ver Créditos) |
+| `analise_escalonamento.py`, `analise_iteracao.py`, `comparar_populacoes.py` | Validação dos escalonamentos e comparação dos resultados |
+| `grafos_reais/`, `grafos_experimento/`, `grafos_gerados_dos_reais/` | Grafos (.stg) usados nos experimentos |
+| `run*.sh`, `run*.bat` | Scripts que criam o ambiente virtual, instalam as dependências e abrem a interface |
+
+## Como executar
+
+Requisitos: Python 3.12 (versão usada no TCC) e `tkinter` para as interfaces gráficas.
+
+```bash
+python -m venv venv
+source venv/bin/activate        # no Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python main2_gui.py             # ou: python main.py, ou o CLI descrito abaixo
+```
+
+No Linux, instale o `tkinter` com `sudo apt-get install python3-tk`. Os scripts `run*.sh` e `run*.bat` fazem esses passos automaticamente.
+
+## Créditos
+
+- O projeto surgiu de um trabalho em grupo da disciplina de Inteligência Computacional, feito por John Cunha e Marcus Vinícius Torres. O repositório original é o [IC-AG](https://github.com/marcustorres02/IC-AG), do qual este é um fork. A evolução para o TCC (operadores, métricas, comparação com os algoritmos determinísticos, interfaces e experimentos) foi desenvolvida por John.
+- Os algoritmos determinísticos de comparação em `task_scheduling.py` vêm do projeto [Task-Scheduling](https://github.com/Brenocsc/Task-Scheduling), de Breno.
+- Os grafos reais (`robot`, `sparse` e `fpppp`) são da biblioteca de grafos da Waseda University, citada na monografia.
 
 ## CLI (main2_cli.py)
 
