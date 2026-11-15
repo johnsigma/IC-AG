@@ -11,11 +11,41 @@ Um algoritmo genético em Python que escalona tarefas de grafos de dependência 
 
 O trabalho compara o algoritmo genético com quatro algoritmos determinísticos (HEFT, CPOP, IHEFT e IPEFT) em três aplicações reais (`robot`, `sparse` e `fpppp`). Os resultados e a discussão estão na monografia.
 
-Depois da entrega do TCC, o projeto foi estendido a pedido do orientador com:
+## Extensão pós-TCC: experimento de populações
 
-- um segundo experimento, que compara a primeira população com a última;
-- carga e gravação de populações iniciais, para repetir experimentos sobre a mesma população;
-- uma interface gráfica e uma linha de comando (CLI) com semente aleatória, para execuções reproduzíveis.
+Depois da entrega do TCC, o projeto foi estendido a pedido do orientador (commits de fevereiro a agosto de 2025) com um segundo experimento. Em vez de comparar o algoritmo genético com os determinísticos, ele acompanha **o que acontece com uma população específica ao longo das gerações**: compara a população inicial com a população final da mesma execução.
+
+### Como o experimento funciona
+
+1. **Gerar e salvar a população inicial.** Dado um grafo (`.stg`) e um tamanho, a população é gerada e gravada em `populacoes/populacao_<hash>.pkl`. O nome do arquivo é o hash SHA-256 do conteúdo, que identifica a população.
+2. **Carregar e conferir.** Ao carregar uma população pelo hash, o hash do conteúdo é recalculado e comparado, para garantir que é exatamente a mesma população. Assim é possível repetir o experimento, com outros parâmetros, partindo das mesmas condições iniciais.
+3. **Evoluir.** O algoritmo genético (cruzamento e mutação sobre alocação e escalonamento, seleção por roleta e elitismo) roda por um número configurável de iterações, uma vez para cada valor de `alpha` informado.
+4. **Registrar.** Para cada indivíduo da primeira e da última iteração são gravados, em CSV, as métricas, a aptidão, a alocação (tarefa → processador) e o escalonamento (ordem das tarefas). Os parâmetros da execução ficam no topo do mesmo arquivo.
+5. **Reaproveitar.** A população final também é salva (com o próprio hash), para servir de ponto de partida de outro experimento.
+
+### Métricas registradas por indivíduo
+
+| Métrica | O que mede |
+| --- | --- |
+| Makespan | Maior tempo de processamento acumulado entre os processadores, incluindo comunicação |
+| Load balance | Makespan dividido pelo tempo médio de processamento por processador (quanto mais perto de 1, mais equilibrado) |
+| Flowtime | Soma dos tempos de término de todas as tarefas |
+| Communication cost | Soma dos custos de comunicação entre tarefas dependentes alocadas em processadores diferentes |
+| Waiting time | Soma do tempo que cada tarefa espera entre o fim de sua última predecessora e o próprio início |
+| Fitness | `alpha × makespan + (1 − alpha) × load balance` |
+
+Com a correção de agosto de 2025, todas as métricas são calculadas antes da aptidão, então a função de fitness pode combinar qualquer uma delas.
+
+### Resultados e validação
+
+- Cada execução grava em `resultados2/<hash>/run_XXX/` (numeração incremental por população), com `primeira_iteracao_<alpha>.csv` e `ultima_iteracao_<alpha>.csv`. Execuções anteriores nunca são sobrescritas.
+- `analise_iteracao.py`, `analise_escalonamento.py` e `verificar_dados.py` conferem se cada escalonamento gravado é válido (tarefas fictícias de início e fim nas posições certas, todas as tarefas presentes e cada uma depois de suas predecessoras) e mostram o percentual de indivíduos válidos e inválidos. `comparar_populacoes.py` confere se a população salva e o CSV da primeira iteração são idênticos.
+
+### Formas de executar
+
+- **Interface gráfica** (`main2_gui.py`, Tkinter): aba 1 para gerar, salvar e carregar populações (por hash ou por arquivo); aba 2 para definir os parâmetros do algoritmo e os valores de `alpha` e rodar o experimento.
+- **Linha de comando** (`main2_cli.py`): subcomandos `salvar`, `carregar`, `salvar-executar` e `docs`, com todos os parâmetros e a semente aleatória (`--seed`) configuráveis. Veja a seção [CLI](#cli-main2_clipy).
+- **Scripts** `run2_gui.sh`, `run2_gui.bat` e `run2.bat` criam o ambiente virtual, instalam as dependências e abrem o programa no Linux e no Windows.
 
 ## Estrutura
 
@@ -24,9 +54,9 @@ Depois da entrega do TCC, o projeto foi estendido a pedido do orientador com:
 | `MSE.py` | Algoritmo genético (classe `MSE`): população, seleção, cruzamento, mutação, elitismo e aptidão |
 | `funcoes.py` | Leitura de grafos, operadores, métricas (makespan, load balance) e gravação de populações e resultados |
 | `main.py` | Primeiro experimento: algoritmo genético contra os algoritmos determinísticos (com janela de parâmetros) |
-| `main2.py`, `main2_gui.py`, `main2_cli.py` | Segundo experimento, comparando primeira e última população (código, interface gráfica e CLI) |
+| `main2.py`, `main2_gui.py`, `main2_cli.py` | Experimento de populações (lógica, interface gráfica e CLI) |
 | `task_scheduling.py` | Implementação dos algoritmos determinísticos de comparação (ver Créditos) |
-| `analise_escalonamento.py`, `analise_iteracao.py`, `comparar_populacoes.py` | Validação dos escalonamentos e comparação dos resultados |
+| `analise_escalonamento.py`, `analise_iteracao.py`, `verificar_dados.py`, `comparar_populacoes.py` | Validação dos escalonamentos gravados e conferência das populações |
 | `grafos_reais/`, `grafos_experimento/`, `grafos_gerados_dos_reais/` | Grafos (.stg) usados nos experimentos |
 | `run*.sh`, `run*.bat` | Scripts que criam o ambiente virtual, instalam as dependências e abrem a interface |
 
