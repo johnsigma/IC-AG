@@ -1,16 +1,17 @@
-import pandas as pd
-import pickle
 import ast
+import sys
+
+import pandas as pd
 from funcoes import carrega_populacao
 
 
-def comparar_fontes_dados():
+def comparar_fontes_dados(hash_populacao, run="run_001", alpha="0.5"):
     """
-    Compara o escalonamento do primeiro indivíduo de um arquivo .pkl e de um .csv.
+    Compara o escalonamento do primeiro indivíduo da população salva (.pkl) com o
+    do CSV da primeira iteração de uma execução do experimento.
     """
-    hash_populacao = "b80012a962df007d2b42db5b3aa789c6dcbc30c16834ddd05b9a785a22de90b0"
     caminho_pkl = f"populacoes/populacao_{hash_populacao}.pkl"
-    caminho_csv = f"resultados2/{hash_populacao}/primeira_iteracao_0.5.csv"
+    caminho_csv = f"resultados2/{hash_populacao}/{run}/primeira_iteracao_{alpha}.csv"
 
     print(f"Comparando dados para o hash: {hash_populacao}\n")
 
@@ -21,8 +22,8 @@ def comparar_fontes_dados():
             print(f"Não foi possível carregar o arquivo PKL: {caminho_pkl}")
             return
 
-        # O escalonamento no pkl já é uma lista de inteiros
-        escalonamento_pkl = populacao_pkl[0]['escalonamento']
+        # No pkl os identificadores das tarefas são texto; converte para inteiros
+        escalonamento_pkl = [int(i) for i in populacao_pkl[0]['escalonamento']]
         print(
             f"Escalonamento do Indivíduo 0 (do arquivo PKL):\n{escalonamento_pkl}\n")
     except Exception as e:
@@ -55,4 +56,8 @@ def comparar_fontes_dados():
 
 
 if __name__ == '__main__':
-    comparar_fontes_dados()
+    # Uso: python verificar_dados.py <hash_da_populacao> [run_001] [alpha]
+    if len(sys.argv) < 2:
+        print("Uso: python verificar_dados.py <hash_da_populacao> [run_001] [alpha]")
+        sys.exit(1)
+    comparar_fontes_dados(*sys.argv[1:4])

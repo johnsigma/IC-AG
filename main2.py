@@ -15,7 +15,6 @@ from funcoes import (
     gera_hash,
 )
 from MSE import MSE
-from tkinter import Tk
 
 
 # seed = 42

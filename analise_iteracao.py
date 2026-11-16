@@ -1,5 +1,7 @@
-import pandas as pd
 import ast
+import sys
+
+import pandas as pd
 
 
 def ler_grafo_stg(caminho_arquivo):
@@ -152,8 +154,12 @@ def analisar_populacao(caminho_csv, caminho_stg):
 
 
 if __name__ == '__main__':
-
-    arquivo_csv = "resultados2/4d85532b92482df5d8a305c20e7e0cdf5eb988da8f4e8b6a31644a9b32b2c427/ultima_iteracao_0.5.csv"
-    arquivo_stg = "grafos_experimento/robot-4-20-30.stg"
+    # Uso: python analise_iteracao.py <csv_da_iteracao> [<grafo.stg>]
+    # Exemplo: python analise_iteracao.py resultados2/<hash>/run_001/ultima_iteracao_0.5.csv
+    if len(sys.argv) < 2:
+        print(__doc__ or "Uso: python analise_iteracao.py <csv_da_iteracao> [<grafo.stg>]")
+        sys.exit(1)
+    arquivo_csv = sys.argv[1]
+    arquivo_stg = sys.argv[2] if len(sys.argv) > 2 else "grafos_experimento/robot-4-20-30.stg"
 
     analisar_populacao(arquivo_csv, arquivo_stg)

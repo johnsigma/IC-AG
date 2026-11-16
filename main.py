@@ -12,7 +12,6 @@ from funcoes import (
 from MSE import MSE
 from task_scheduling import experimento_breno
 from sys import argv
-from tkinter import Tk
 
 
 def experimento(
@@ -68,6 +67,7 @@ def main():
     }
     
     if use_gui:
+        from tkinter import Tk
         from MSEParametersGUI import MSEParametersGUI
         root = Tk()
         app = MSEParametersGUI(root, parametrosMSE)

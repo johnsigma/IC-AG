@@ -9,3 +9,5 @@ populacoes/*
 !populacoes/.gitkeep
 resultados2/*
 !resultados2/.gitkeep
+*.pyc
+template_tcc_bcc*.pdf
