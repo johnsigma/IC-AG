@@ -39,13 +39,10 @@ Com a correção de agosto de 2025, todas as métricas são calculadas antes da 
 ### Resultados e validação
 
 - Cada execução grava em `resultados2/<hash>/run_XXX/` (numeração incremental por população), com `primeira_iteracao_<alpha>.csv` e `ultima_iteracao_<alpha>.csv`. Execuções anteriores nunca são sobrescritas.
-- `analise_iteracao.py`, `analise_escalonamento.py` e `verificar_dados.py` conferem se cada escalonamento gravado é válido (tarefas fictícias de início e fim nas posições certas, todas as tarefas presentes e cada uma depois de suas predecessoras) e mostram o percentual de indivíduos válidos e inválidos. `comparar_populacoes.py` confere se a população salva e o CSV da primeira iteração são idênticos.
-
-### Formas de executar
-
-- **Interface gráfica** (`main2_gui.py`, Tkinter): aba 1 para gerar, salvar e carregar populações (por hash ou por arquivo); aba 2 para definir os parâmetros do algoritmo e os valores de `alpha` e rodar o experimento.
-- **Linha de comando** (`main2_cli.py`): subcomandos `salvar`, `carregar`, `salvar-executar` e `docs`, com todos os parâmetros e a semente aleatória (`--seed`) configuráveis. Veja a seção [CLI](#cli-main2_clipy).
-- **Scripts** `run2_gui.sh`, `run2_gui.bat` e `run2.bat` criam o ambiente virtual, instalam as dependências e abrem o programa no Linux e no Windows.
+- Com a mesma semente (`--seed`), o experimento é reproduzível: a mesma semente gera a mesma população (mesmo hash) e a mesma população final.
+- Dois scripts de apoio conferem os resultados (veja o passo a passo da extensão):
+  - `analise_iteracao.py` valida se cada escalonamento gravado é possível (tarefas fictícias de início e fim nas posições certas, todas as tarefas presentes e cada uma depois de suas predecessoras) e mostra o percentual de indivíduos válidos e inválidos;
+  - `verificar_dados.py` confere se a população salva em `.pkl` é idêntica à registrada no CSV da primeira iteração.
 
 ## Estrutura
 
@@ -56,22 +53,103 @@ Com a correção de agosto de 2025, todas as métricas são calculadas antes da 
 | `main.py` | Primeiro experimento: algoritmo genético contra os algoritmos determinísticos (com janela de parâmetros) |
 | `main2.py`, `main2_gui.py`, `main2_cli.py` | Experimento de populações (lógica, interface gráfica e CLI) |
 | `task_scheduling.py` | Implementação dos algoritmos determinísticos de comparação (ver Créditos) |
-| `analise_escalonamento.py`, `analise_iteracao.py`, `verificar_dados.py`, `comparar_populacoes.py` | Validação dos escalonamentos gravados e conferência das populações |
+| `analise_iteracao.py`, `verificar_dados.py` | Validação dos escalonamentos gravados e conferência da população salva (usados no passo a passo da extensão) |
+| `analise_escalonamento.py`, `comparar_populacoes.py` | Scripts de apoio usados durante o desenvolvimento, com os caminhos dos arquivos escritos no fim de cada arquivo |
 | `grafos_reais/`, `grafos_experimento/`, `grafos_gerados_dos_reais/` | Grafos (.stg) usados nos experimentos |
 | `run*.sh`, `run*.bat` | Scripts que criam o ambiente virtual, instalam as dependências e abrem a interface |
 
-## Como executar
+## Passo a passo
 
-Requisitos: Python 3.12 (versão usada no TCC) e `tkinter` para as interfaces gráficas.
+Todos os comandos devem ser executados na pasta raiz do repositório, porque os caminhos dos grafos (`grafos_experimento/...`) e das pastas de resultados são relativos a ela.
+
+### 0. Preparação (uma vez)
 
 ```bash
-python -m venv venv
-source venv/bin/activate        # no Windows: venv\Scripts\activate
+git clone https://github.com/johnsigma/IC-AG.git
+cd IC-AG
+git checkout tcc                 # se a branch padrão ainda não for a tcc
+python3.12 -m venv venv          # no Windows: python -m venv venv
+source venv/bin/activate         # no Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python main2_gui.py             # ou: python main.py, ou o CLI descrito abaixo
 ```
 
-No Linux, instale o `tkinter` com `sudo apt-get install python3-tk`. Os scripts `run*.sh` e `run*.bat` fazem esses passos automaticamente.
+- O projeto foi desenvolvido e testado com **Python 3.12**; as versões das bibliotecas estão fixadas em `requirements.txt`.
+- O `tkinter` só é necessário para as interfaces gráficas. Ele já vem com o Python no Windows e no macOS; no Linux, instale com `sudo apt-get install python3-tk`.
+- Os scripts `run*.sh` (Linux) e `run*.bat` (Windows) fazem a preparação e executam o programa de uma vez. Os `.sh` também rodam `sudo apt-get`.
+
+### 1. Versão do TCC: algoritmo genético contra HEFT, CPOP, IHEFT e IPEFT
+
+Roda o experimento da monografia nos três grafos (`robot-4-20-30`, `sparse-4-100-30` e `fpppp-8-20-30`, que têm 90, 98 e 336 tarefas). Para cada grafo, o algoritmo genético é executado 9 vezes para cada valor de `alpha` (0, 0,25, 0,5, 0,75 e 1), e o resultado é comparado com o dos algoritmos determinísticos. Os parâmetros do algoritmo são: população de 20 indivíduos, 200 iterações, probabilidade de cruzamento de 0,4 (alocação e escalonamento), de mutação de 0,2 (alocação e escalonamento) e taxa de elitismo de 0,2.
+
+**Pela linha de comando**
+
+```bash
+python main.py
+```
+
+(ou `./run.sh` no Linux, `run.bat` no Windows). O programa mostra o andamento de cada grafo no terminal. A execução completa leva cerca de 40 minutos, quase todo no grafo `fpppp` (medido em um computador comum; depende do processador). Para mudar os parâmetros nesse modo, edite o dicionário `parametrosMSE` na função `main` de `main.py`.
+
+**Pela interface gráfica**
+
+```bash
+python main.py --gui
+```
+
+(ou `./run_gui.sh` ou `run_gui.bat`). Abre a janela **Parâmetros MSE**, com os campos tamanho da população, número de iterações, chances de cruzamento e de mutação (alocação e escalonamento) e taxa de elitismo. Altere o que quiser, clique em **Iniciar experimento** e acompanhe o andamento na área de texto da própria janela. É o mesmo experimento da linha de comando, com os parâmetros que você digitou. Os valores de `alpha`, os grafos e as 9 repetições são fixos.
+
+**Resultado (nos dois modos)**
+
+- `resultados/<grafo>_<id>.csv`: um arquivo por grafo. À esquerda ficam os parâmetros usados. À direita, uma linha para cada algoritmo: IPEFT, IHEFT, CPOP e HEFT (uma execução cada) e `MSE_<alpha>` (média de 9 execuções do algoritmo genético), com makespan, load balance, média e desvio padrão da iteração em que o melhor indivíduo foi encontrado, e desvios padrão do makespan e do load balance.
+- `resultados/tempo_<id>.txt`: tempo total da execução.
+- Não há semente aleatória nesta versão, então os números variam um pouco a cada execução.
+
+### 2. Extensão: experimento de populações
+
+A extensão trabalha em duas etapas: primeiro gera e salva uma população inicial, depois a carrega pelo hash e a evolui. O grafo informado ao carregar precisa ser o mesmo usado para gerar a população (o arquivo `.pkl` não guarda essa informação).
+
+**Pela linha de comando**
+
+1. Gere e salve uma população (anote o hash impresso no final):
+
+   ```bash
+   python main2_cli.py salvar --grafo grafos_experimento/robot-4-20-30.stg --tamanho-populacao 10 --seed 42
+   ```
+
+2. Carregue a população pelo hash e rode o experimento (aqui, 100 iterações e dois valores de `alpha`):
+
+   ```bash
+   python main2_cli.py carregar --hash <HASH> --grafo grafos_experimento/robot-4-20-30.stg --iteracoes 100 --alpha 0.5,0.7 --seed 42
+   ```
+
+   Para os dois passos de uma vez, use `salvar-executar` (mesmos argumentos). Todos os argumentos estão descritos na seção [CLI](#cli-main2_clipy).
+
+3. Veja os resultados em `resultados2/<HASH>/run_001/`: `primeira_iteracao_<alpha>.csv` (população inicial) e `ultima_iteracao_<alpha>.csv` (população final). Cada linha é um indivíduo, com as cinco métricas, a aptidão, a alocação e o escalonamento. Os hashes das populações finais aparecem no terminal.
+
+4. Confira os resultados (opcional):
+
+   ```bash
+   python analise_iteracao.py resultados2/<HASH>/run_001/ultima_iteracao_0.5.csv
+   python verificar_dados.py <HASH>
+   ```
+
+   O primeiro informa quantos indivíduos têm escalonamento válido (o esperado é 100%). O segundo confirma que a população salva é idêntica à registrada na primeira iteração.
+
+**Pela interface gráfica**
+
+```bash
+python main2_gui.py
+```
+
+(ou `./run2_gui.sh` ou `run2_gui.bat`). A janela tem duas abas.
+
+1. **Aba "1. Gerenciar População"**
+   - Em *Gerar Nova População*, informe o tamanho e o arquivo de grafo (use **Selecionar...** para escolher um `.stg`) e clique em **Gerar e Salvar População**. A população é salva, aparece uma mensagem com o hash e ela já fica carregada.
+   - Para usar uma população salva antes, use **Carregar de Arquivo (.pkl)** ou **Carregar por Hash**. Confira se o arquivo de grafo continua sendo o mesmo da população.
+2. **Aba "2. Executar Experimento"**
+   - Em *Status da População* aparece o hash da população carregada.
+   - Ajuste o número de iterações, as chances de cruzamento e de mutação e a taxa de elitismo (padrões da interface gráfica: 100 iterações e elitismo de 0,1) e informe os valores de `alpha` separados por vírgula, por exemplo `0.5, 0.7`.
+   - Clique em **Rodar Experimento**. A janela fica sem responder enquanto o experimento roda. Ao final, uma mensagem mostra os hashes das populações finais.
+3. Os resultados ficam em `resultados2/<hash>/run_XXX/`, como na linha de comando, e podem ser conferidos com os dois scripts do passo 4 acima.
 
 ## Créditos
 
